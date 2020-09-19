@@ -27,6 +27,9 @@ class DataSet(tordata.Dataset):
     def __getitem__(self, item):
         return self.input_data[item], self.output_data[item]
 
+    def __len__(self):
+        return len(self.input_data)
+
 
 """
     def load_all_data(self):

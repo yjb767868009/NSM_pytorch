@@ -6,6 +6,10 @@ activation_layer_list = {
 }
 
 
+def activation_layer(s):
+    return activation_layer_list.get(s)
+
+
 class Encoder(torch.nn.Module):
     def __init__(self, encoder_dims, encoder_activations, encoder_keep_prob):
         super().__init__()
@@ -15,13 +19,10 @@ class Encoder(torch.nn.Module):
 
         self.layer1 = nn.Sequential(nn.Dropout(encoder_keep_prob),
                                     nn.Linear(encoder_dims[0], encoder_dims[1]),
-                                    encoder_activations[0])
+                                    activation_layer(encoder_activations[0]))
         self.layer2 = nn.Sequential(nn.Dropout(encoder_keep_prob),
                                     nn.Linear(encoder_dims[1], encoder_dims[2]),
-                                    encoder_activations[1])
-
-    def activation_layer(self, s):
-        return activation_layer_list.get(s)
+                                    activation_layer(encoder_activations[1]))
 
     def forward(self, x):
         x = self.layer1(x)

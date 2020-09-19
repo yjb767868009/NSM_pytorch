@@ -9,7 +9,7 @@ parser.add_argument('--cache', default=True, help='cache: if set as TRUE all the
 opt = parser.parse_args()
 
 if __name__ == '__main__':
-    model = initialization(conf, train=opt.cache)[0]
+    model = initialization(conf, train=True)
     print("Training START")
     model.train()
     print("Training COMPLETE")

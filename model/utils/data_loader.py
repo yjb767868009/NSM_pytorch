@@ -25,9 +25,9 @@ def load_data(dataset_path, save_path, cache=True):
         np.float32(np.loadtxt(dataset_path + '/Output.txt')),
         np.float32(np.loadtxt(dataset_path + '/OutputNorm.txt')),
         savefile=save_path + '/Y')
-    train_source = DataSet(input_data, input_data.shape[1], input_mean, input_std,
-                           output_data, output_data.shape[1], output_mean, output_std,
-                           input_data.shape[0], cache)
-    # test_source = DataSet()
+    data_source = DataSet(input_data, input_data.shape[1], input_mean, input_std,
+                          output_data, output_data.shape[1], output_mean, output_std,
+                          input_data.shape[0], cache)
+    train_source = data_source
     test_source = None
     return train_source, test_source
