@@ -26,6 +26,5 @@ conf = {
                                ['elu', 'elu', None]],
         'expert_keep_prob': 0.7,
         'lr': 0.0001,
-
     },
 }
