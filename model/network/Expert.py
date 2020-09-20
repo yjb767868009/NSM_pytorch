@@ -1,25 +1,38 @@
 import torch
 import torch.nn as nn
 
+from model.utils.activation_layer import activation_layer
 
-class ExpertLayer(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, input, weight, bias=None):
-        ctx.save_for_backward(input, weight, bias)
-        output = input.mm(weight.t())
-        if bias is not None:
-            output += bias.unsequeeze(0).expand_as(output)
-        return output
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        input, weight, bias = ctx.saved_tensors
-        grad_input = grad_weight = grad_bias = None
-        if ctx.needs_input_grad[0]:
-            grad_input = grad_output.mm(weight)
-        if ctx.needs_input_grad[1]:
-            grad_weight = grad_output.t().mm(input)
-        if bias is not None and ctx.needs_input_grad[2]:
-            grad_bias = grad_output.sum(0)
+class Expert(nn.Module):
+    def __init__(self, expert_weights: torch.Tensor, expert_dims, expert_activations, expert_keep_prob):
+        super().__init__()
+        self.expert_weights = expert_weights
+        self.expert_dims = expert_dims
+        self.expert_activations = expert_activations
+        self.expert_keep_prob = expert_keep_prob
+        self.expert_nums = len(expert_weights)
+        self.layer_nums = len(expert_dims) - 1
 
-        return grad_input, grad_weight, grad_bias
+        self.W = []
+        self.B = []
+        self.D = []
+        self.A = []
+        for i in range(self.layer_nums):
+            a = torch.Tensor(self.expert_nums, expert_dims[i + 1], expert_dims[i])
+            r = self.expert_weights.unsqueeze(-1).unsqueeze(-1)
+            weight = r * a
+            weight = weight.sum(dim=0)
+            self.W.append(nn.Parameter(weight))
+            bias = torch.Tensor(expert_dims[1])
+            self.B.append(nn.Parameter(bias))
+            self.D.append(nn.Dropout(p=expert_keep_prob))
+            self.A.append(activation_layer(self.expert_activations[i]))
+
+    def forward(self, x):
+        for i in range(self.layer_nums):
+            x = self.D[i](x)
+            x = torch.add(torch.mm(x, self.W[i].t()), self.B[i])
+            if self.A[i]:
+                x = self.A[i](x)
+        return x

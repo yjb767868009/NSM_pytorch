@@ -1,13 +1,7 @@
 import torch
 import torch.nn as nn
 
-activation_layer_list = {
-    'elu': nn.ELU(),
-}
-
-
-def activation_layer(s):
-    return activation_layer_list.get(s)
+from model.utils.activation_layer import activation_layer
 
 
 class Encoder(torch.nn.Module):
