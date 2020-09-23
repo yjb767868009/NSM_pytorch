@@ -1,8 +1,8 @@
 conf = {
-    "save_path": "E:/NSM/trained",
-    "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+    "save_path": "/media/fish/data/NSM/trained",
+    "CUDA_VISIBLE_DEVICES": "2",
     "data": {
-        'dataset_path': "E:/NSM/NSM/data1",
+        'dataset_path': "/media/fish/data/NSM/data1",
     },
     "model": {
         'model_name': 'NSM',
@@ -18,7 +18,7 @@ conf = {
                                 ['elu', 'elu'],
                                 ['elu', 'elu'],
                                 ['elu', 'elu']],
-        'encoder_keep_prob': 0.7,
+        'encoder_keep_prob': 0.3,
         'expert_components': [1, 10],
         'expert_dims': [[650, 512, 512, 10],
                         [1664, 512, 512, 618]],

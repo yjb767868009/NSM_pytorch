@@ -1,12 +1,17 @@
-import itertools
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.autograd as autograd
 import torch.optim as optim
+import torch.utils
+import torch.utils.cpp_extension
 import torch.utils.data as tordata
 
 from .network import Expert, Encoder
+
+print('CUDA_HOME:', torch.utils.cpp_extension.CUDA_HOME)  # 输出 Pytorch 运行时使用的 cuda
+print('torch cuda version:', torch.version.cuda)
+print('cuda is available:', torch.cuda.is_available())
 
 
 class Model(object):
@@ -32,7 +37,6 @@ class Model(object):
             encoder = nn.DataParallel(encoder)
             encoder.cuda()
             self.encoders.append(encoder)
-        encoder_iter = itertools.chain(e.parameters() for e in self.encoders)
 
         self.expert_nums = len(expert_components)
         self.experts = []
@@ -41,11 +45,16 @@ class Model(object):
             expert = nn.DataParallel(expert)
             expert.cuda()
             self.experts.append(expert)
-        expert_iter = itertools.chain(e.parameters() for e in self.experts)
 
+        self.weight_blend_init = torch.Tensor([1]).cuda()
+
+        params_list = []
+        for e in self.encoders:
+            params_list.append({'params': e.parameters()})
+        for e in self.experts:
+            params_list.append({'params': e.parameters()})
         self.lr = lr
-        params = itertools.chain(encoder_iter, expert_iter)
-        self.optimizer = optim.AdamW([{'params': params}],
+        self.optimizer = optim.AdamW(params_list,
                                      lr=self.lr)
 
         self.loss_function = nn.SmoothL1Loss()
@@ -57,33 +66,38 @@ class Model(object):
             num_workers=4,
             shuffle=True,
         )
+        for encoder in self.encoders:
+            encoder.train()
+        for expert in self.experts:
+            expert.train()
 
         train_loss = []
         for e in range(self.epoch):
             loss_list = []
             for index, (x, y) in enumerate(train_loader):
+                batch_nums = x.size()[0]
+                weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
                 self.optimizer.zero_grad()
                 status_outputs = []
                 for i, encoder in enumerate(self.encoders):
-                    encoder.train()
-                    status_output = encoder(x[self.segmentation[i]:self.segmentation[i + 1]])
+                    status_output = encoder(x[:, self.segmentation[i]:self.segmentation[i + 1]])
                     status_outputs.append(status_output)
-                status = torch.cat(tuple(status_outputs), 0)
+                status = torch.cat(tuple(status_outputs), 1)
 
-                weight_blend = torch.Tensor(1)
                 expert_first = self.experts[0]
-                expert_first.train()
-                weight_blend = expert_first(weight_blend, x[self.segmentation[-2]:self.segmentation[-1]])
+                weight_blend = expert_first(weight_blend_first, x[:, self.segmentation[-2]:self.segmentation[-1]])
+                #print('expert_first weight_blend', weight_blend)
 
                 expert_last = self.experts[-1]
-                expert_last.train()
                 output = expert_last(weight_blend, status)
-
+                #print('output', output)
+                y = y.cuda()
                 loss = self.loss_function(output, y)
                 loss_list.append(loss.item())
 
                 loss.backward()
                 self.optimizer.step()
+            # print(loss_list)
             avg_loss = np.asarray(loss_list).mean()
             train_loss.append(avg_loss)
             print('Epoch {}:', format(e + 1), 'Training Loss =', '{:.9f}'.format(avg_loss))

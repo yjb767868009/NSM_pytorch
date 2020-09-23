@@ -2,7 +2,7 @@ import torch.nn as nn
 
 activation_layer_list = {
     'elu': nn.ELU(),
-    'softmax': nn.Softmax(),
+    'softmax': nn.Softmax(dim=1),
     'None': None
 }
 
