@@ -98,7 +98,7 @@ class Model(object):
 
                 loss.backward()
                 self.optimizer.step()
-
+            if e % 10 == 0:
                 self.save()
             avg_loss = np.asarray(loss_list).mean()
             train_loss.append(avg_loss)
