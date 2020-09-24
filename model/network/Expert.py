@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 
 from model.utils.activation_layer import activation_layer
+import os
 
 
 class Expert(nn.Module):
@@ -20,7 +21,7 @@ class Expert(nn.Module):
         for i in range(self.layer_nums):
             w = torch.randn(self.expert_nums, self.expert_dims[i + 1], self.expert_dims[i]).cuda()
             self.W.append(nn.Parameter(w))
-            b = torch.zeros(self.expert_nums, self.expert_dims[i + 1]).cuda()
+            b = torch.zeros(self.expert_nums, self.expert_dims[i + 1], 1).cuda()
             self.B.append(nn.Parameter(b))
             self.D.append(nn.Dropout(p=expert_keep_prob))
             self.A.append(activation_layer(self.expert_activations[i]))
@@ -37,18 +38,25 @@ class Expert(nn.Module):
             weight = c * w
             weight = weight.sum(dim=1)
             t = torch.bmm(weight, x)
-            t = t.squeeze(-1)
 
-            d = weight_blend.unsqueeze(-1)
+            d = weight_blend.unsqueeze(-1).unsqueeze(-1)
             b = self.B[i].unsqueeze(0)
             b_size = b.size()
-            b = b.expand(batch_nums, b_size[1], b_size[2])
+            b = b.expand(batch_nums, b_size[1], b_size[2], b_size[3])
             bias = d * b
             bias = bias.sum(dim=1)
             x = torch.add(t, bias)
+            x = x.squeeze(-1)
+
             if self.A[i]:
                 if self.A[i] == activation_layer('softmax'):
                     x = self.A[i](x)
                 else:
                     x = self.A[i](x)
         return x
+
+    def save_network(self, expert_index, save_path):
+        for i in range(self.layer_nums):
+            for j in range(self.expert_nums):
+                torch.save(self.W[i], os.path.join(save_path, 'wc%0i%0i%0i_w.bin' % (expert_index, i, j)))
+                torch.save(self.B[i], os.path.join(save_path, 'wc%0i%0i%0i_b.bin' % (expert_index, i, j)))

@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import torch
 import torch.nn as nn
 import torch.autograd as autograd
@@ -16,7 +17,7 @@ print('cuda is available:', torch.cuda.is_available())
 
 class Model(object):
     def __init__(self,
-                 model_name, epoch, batch_size, segmentation,
+                 model_name, epoch, batch_size, segmentation, save_path,
                  train_source, test_source,
                  encoder_nums, encoder_dims, encoder_activations, encoder_keep_prob,
                  expert_components, expert_dims, expert_activations, expert_keep_prob,
@@ -26,6 +27,7 @@ class Model(object):
         self.epoch = epoch
         self.batch_size = batch_size
         self.segmentation = segmentation
+        self.save_path = save_path
 
         self.train_source = train_source
         self.test_source = test_source
@@ -86,18 +88,26 @@ class Model(object):
 
                 expert_first = self.experts[0]
                 weight_blend = expert_first(weight_blend_first, x[:, self.segmentation[-2]:self.segmentation[-1]])
-                #print('expert_first weight_blend', weight_blend)
+                # print('expert_first weight_blend', weight_blend)
 
                 expert_last = self.experts[-1]
                 output = expert_last(weight_blend, status)
-                #print('output', output)
+                # print('output', output)
                 y = y.cuda()
                 loss = self.loss_function(output, y)
                 loss_list.append(loss.item())
 
                 loss.backward()
                 self.optimizer.step()
+
+                self.save()
             # print(loss_list)
             avg_loss = np.asarray(loss_list).mean()
             train_loss.append(avg_loss)
             print('Epoch {}:', format(e + 1), 'Training Loss =', '{:.9f}'.format(avg_loss))
+
+    def save(self):
+        for i in range(self.encoder_nums):
+            self.encoders[i].module.save_network(i, self.save_path)
+        for i in range(self.expert_nums):
+            self.experts[i].module.save_network(i, self.save_path)
