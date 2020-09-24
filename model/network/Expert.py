@@ -6,11 +6,11 @@ import os
 
 
 class Expert(nn.Module):
-    def __init__(self, expert_nums, expert_dims, expert_activations, expert_keep_prob):
+    def __init__(self, expert_nums, expert_dims, expert_activations, expert_dropout):
         super().__init__()
         self.expert_dims = expert_dims
         self.expert_activations = expert_activations
-        self.expert_keep_prob = expert_keep_prob
+        self.expert_dropout = expert_dropout
         self.expert_nums = expert_nums
         self.layer_nums = len(expert_dims) - 1
 
@@ -23,39 +23,46 @@ class Expert(nn.Module):
             self.W.append(nn.Parameter(w))
             b = torch.zeros(self.expert_nums, self.expert_dims[i + 1], 1).cuda()
             self.B.append(nn.Parameter(b))
-            self.D.append(nn.Dropout(p=expert_keep_prob))
+            self.D.append(nn.Dropout(p=expert_dropout))
             self.A.append(activation_layer(self.expert_activations[i]))
 
     def forward(self, weight_blend, x):
         for i in range(self.layer_nums):
             x = self.D[i](x)
             x = x.unsqueeze(-1)
-            batch_nums = weight_blend.size()[0]
-            c = weight_blend.unsqueeze(-1).unsqueeze(-1)
-            w = self.W[i].unsqueeze(0)
-            w_size = w.size()
-            w = w.expand(batch_nums, w_size[1], w_size[2], w_size[3])
-            weight = c * w
-            weight = weight.sum(dim=1)
+            weight = self.get_wb(self.W[i], weight_blend)
             t = torch.bmm(weight, x)
-
-            d = weight_blend.unsqueeze(-1).unsqueeze(-1)
-            b = self.B[i].unsqueeze(0)
-            b_size = b.size()
-            b = b.expand(batch_nums, b_size[1], b_size[2], b_size[3])
-            bias = d * b
-            bias = bias.sum(dim=1)
+            bias = self.get_wb(self.B[i], weight_blend)
             x = torch.add(t, bias)
             x = x.squeeze(-1)
 
             if self.A[i]:
-                if self.A[i] == activation_layer('softmax'):
-                    x = self.A[i](x)
-                else:
-                    x = self.A[i](x)
+                x = self.A[i](x)
         return x
 
+    def get_wb(self, x, weight_blend):
+        """
+        put weight blend in weight or bias
+
+        :param x: weight or bis
+        :param weight_blend: from last expert's weight blend
+        :return: new weight or bias
+        """
+        batch_nums = weight_blend.size()[0]
+        c = weight_blend.unsqueeze(-1).unsqueeze(-1)
+        x_size = x.size()
+        x = x.unsqueeze(0).expand(batch_nums, x_size[0], x_size[1], x_size[2])
+        x = c * x
+        return x.sum(dim=1)
+
     def save_network(self, expert_index, save_path):
+        """
+        save expert weight and bias for unity playing
+
+        :param expert_index: this expert's index of all expert
+        :param save_path: the root of save path
+        :return: None
+        """
         for i in range(self.layer_nums):
             for j in range(self.expert_nums):
                 torch.save(self.W[i], os.path.join(save_path, 'wc%0i%0i%0i_w.bin' % (expert_index, i, j)))

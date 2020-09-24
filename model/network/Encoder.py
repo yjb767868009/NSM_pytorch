@@ -6,17 +6,17 @@ from model.utils.activation_layer import activation_layer
 
 
 class Encoder(torch.nn.Module):
-    def __init__(self, encoder_dims, encoder_activations, encoder_keep_prob):
+    def __init__(self, encoder_dims, encoder_activations, encoder_dropout):
         super().__init__()
         self.encoder_dims = encoder_dims
         self.encoder_activations = encoder_activations
-        self.encoder_keep_prob = encoder_keep_prob
+        self.encoder_dropout = encoder_dropout
         self.layer_nums = len(encoder_dims) - 1
 
-        self.layer1 = nn.Sequential(nn.Dropout(encoder_keep_prob),
+        self.layer1 = nn.Sequential(nn.Dropout(encoder_dropout),
                                     nn.Linear(encoder_dims[0], encoder_dims[1]),
                                     activation_layer(encoder_activations[0]))
-        self.layer2 = nn.Sequential(nn.Dropout(encoder_keep_prob),
+        self.layer2 = nn.Sequential(nn.Dropout(encoder_dropout),
                                     nn.Linear(encoder_dims[1], encoder_dims[2]),
                                     activation_layer(encoder_activations[1]))
 
