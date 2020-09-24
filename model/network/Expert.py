@@ -29,14 +29,23 @@ class Expert(nn.Module):
         for i in range(self.layer_nums):
             x = self.D[i](x)
             x = x.unsqueeze(-1)
+            batch_nums = weight_blend.size()[0]
             c = weight_blend.unsqueeze(-1).unsqueeze(-1)
-            weight = c * self.W[i]
+            w = self.W[i].unsqueeze(0)
+            w_size = w.size()
+            w = w.expand(batch_nums, w_size[1], w_size[2], w_size[3])
+            weight = c * w
             weight = weight.sum(dim=1)
             t = torch.bmm(weight, x)
             t = t.squeeze(-1)
-            bais = weight_blend.unsqueeze(-1) * self.B[i]
-            bais = bais.sum(dim=1)
-            x = torch.add(t, bais)
+
+            d = weight_blend.unsqueeze(-1)
+            b = self.B[i].unsqueeze(0)
+            b_size = b.size()
+            b = b.expand(batch_nums, b_size[1], b_size[2])
+            bias = d * b
+            bias = bias.sum(dim=1)
+            x = torch.add(t, bias)
             if self.A[i]:
                 if self.A[i] == activation_layer('softmax'):
                     x = self.A[i](x)
