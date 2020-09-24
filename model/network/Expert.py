@@ -14,8 +14,8 @@ class Expert(nn.Module):
         self.expert_nums = expert_nums
         self.layer_nums = len(expert_dims) - 1
 
-        self.W = []
-        self.B = []
+        self.W = nn.ParameterList()
+        self.B = nn.ParameterList()
         self.D = []
         self.A = []
         for i in range(self.layer_nums):

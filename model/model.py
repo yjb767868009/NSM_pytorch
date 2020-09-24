@@ -1,5 +1,6 @@
 import numpy as np
-import os
+import datetime
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.autograd as autograd
@@ -76,7 +77,7 @@ class Model(object):
         train_loss = []
         for e in range(self.epoch):
             loss_list = []
-            for index, (x, y) in enumerate(train_loader):
+            for x, y in tqdm(train_loader):
                 batch_nums = x.size()[0]
                 weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
                 self.optimizer.zero_grad()
@@ -88,11 +89,9 @@ class Model(object):
 
                 expert_first = self.experts[0]
                 weight_blend = expert_first(weight_blend_first, x[:, self.segmentation[-2]:self.segmentation[-1]])
-                # print('expert_first weight_blend', weight_blend)
 
                 expert_last = self.experts[-1]
                 output = expert_last(weight_blend, status)
-                # print('output', output)
                 y = y.cuda()
                 loss = self.loss_function(output, y)
                 loss_list.append(loss.item())
@@ -101,10 +100,12 @@ class Model(object):
                 self.optimizer.step()
 
                 self.save()
-            # print(loss_list)
             avg_loss = np.asarray(loss_list).mean()
             train_loss.append(avg_loss)
-            print('Epoch {}:', format(e + 1), 'Training Loss =', '{:.9f}'.format(avg_loss))
+            print('Time {} '.format(datetime.datetime.now()),
+                  'Epoch {} : '.format(e + 1),
+                  'Training Loss = {:.9f}'.format(avg_loss),
+                  )
 
     def save(self):
         for i in range(self.encoder_nums):
