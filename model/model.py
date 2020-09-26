@@ -73,6 +73,12 @@ class Model(object):
         # build loss function
         self.loss_function = nn.SmoothL1Loss()
 
+    def load(self, load_path):
+        for i in range(self.encoder_nums):
+            self.encoders[i].load_state_dict(torch.load(os.path.join(load_path, 'encoder%0i.pth' % i)))
+        for i in range(self.expert_nums):
+            self.experts[i].load_state_dict(torch.load(os.path.join(load_path, 'expert%0i.pth' % i)))
+
     def train(self):
         train_loader = tordata.DataLoader(
             dataset=self.train_source,
@@ -119,6 +125,11 @@ class Model(object):
                     self.encoders[i].module.save_network(i, self.save_path)
                 for i in range(self.expert_nums):
                     self.experts[i].module.save_network(i, self.save_path)
+                # save model for load weights
+                for i in range(self.encoder_nums):
+                    torch.save(self.encoders[i], os.path.join(self.save_path, 'encoder%0i.pth' % i))
+                for i in range(self.expert_nums):
+                    torch.save(self.experts[i], os.path.join(self.save_path, 'encoder%0i.pth' % i))
 
             avg_loss = np.asarray(loss_list).mean()
             train_loss.append(avg_loss)

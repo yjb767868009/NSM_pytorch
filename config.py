@@ -1,5 +1,6 @@
 conf = {
     "save_path": "/media/fish/data/NSM/trained",
+    "load_path": None,
     "CUDA_VISIBLE_DEVICES": "2",
     "data": {
         'dataset_path': "/media/fish/data/NSM/data1",
