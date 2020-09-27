@@ -1,7 +1,9 @@
 conf = {
+    # "save_path": "E:/NSM/trained0924",
     "save_path": "/media/fish/data/NSM/trained",
     "CUDA_VISIBLE_DEVICES": "2",
     "data": {
+        # 'dataset_path':"E:/NSM/data1",
         'dataset_path': "/media/fish/data/NSM/data1",
     },
     "model": {

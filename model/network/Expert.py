@@ -65,5 +65,8 @@ class Expert(nn.Module):
         """
         for i in range(self.layer_nums):
             for j in range(self.expert_nums):
-                torch.save(self.W[i], os.path.join(save_path, 'wc%0i%0i%0i_w.bin' % (expert_index, i, j)))
-                torch.save(self.B[i], os.path.join(save_path, 'wc%0i%0i%0i_b.bin' % (expert_index, i, j)))
+                self.W[i][j, :, :].detach().numpy().tofile(
+                    os.path.join(save_path, 'wc%0i%0i%0i_w.bin' % (expert_index, i, j)))
+                self.B[i][j, :, :].detach().numpy().tofile(
+                    os.path.join(save_path, 'wc%0i%0i%0i_b.bin' % (expert_index, i, j))
+                )
