@@ -94,6 +94,10 @@ class Model(object):
         train_loss = []
         for e in range(self.epoch):
             loss_list = []
+            if e % 50 == 0:
+                self.lr = self.lr / 10
+                for param_group in self.optimizer.param_groups:
+                    param_group['lr'] = self.lr
             for x, y in tqdm(train_loader):
                 batch_nums = x.size()[0]
                 weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
@@ -135,7 +139,8 @@ class Model(object):
             train_loss.append(avg_loss)
             print('Time {} '.format(datetime.datetime.now()),
                   'Epoch {} : '.format(e + 1),
-                  'Training Loss = {:.9f}'.format(avg_loss),
+                  'Training Loss = {:.9f} '.format(avg_loss),
+                  'lr = {} '.format(self.lr),
                   )
         torch.save(train_loss, os.path.join(self.save_path, 'trainloss.bin'))
         print('Learning Finished')
