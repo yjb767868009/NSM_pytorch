@@ -73,6 +73,12 @@ class Model(object):
         # build loss function
         self.loss_function = nn.SmoothL1Loss()
 
+    def load(self, load_path):
+        for i in range(self.encoder_nums):
+            self.encoders[i].load_state_dict(torch.load(os.path.join(load_path, 'encoder%0i.pth' % i)))
+        for i in range(self.expert_nums):
+            self.experts[i].load_state_dict(torch.load(os.path.join(load_path, 'expert%0i.pth' % i)))
+
     def train(self):
         train_loader = tordata.DataLoader(
             dataset=self.train_source,
@@ -88,6 +94,10 @@ class Model(object):
         train_loss = []
         for e in range(self.epoch):
             loss_list = []
+            if e % 50 == 0:
+                self.lr = self.lr / 10
+                for param_group in self.optimizer.param_groups:
+                    param_group['lr'] = self.lr
             for x, y in tqdm(train_loader):
                 batch_nums = x.size()[0]
                 weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
@@ -119,12 +129,56 @@ class Model(object):
                     self.encoders[i].module.save_network(i, self.save_path)
                 for i in range(self.expert_nums):
                     self.experts[i].module.save_network(i, self.save_path)
+                # save model for load weights
+                for i in range(self.encoder_nums):
+                    torch.save(self.encoders[i], os.path.join(self.save_path, 'encoder%0i.pth' % i))
+                for i in range(self.expert_nums):
+                    torch.save(self.experts[i], os.path.join(self.save_path, 'encoder%0i.pth' % i))
 
             avg_loss = np.asarray(loss_list).mean()
             train_loss.append(avg_loss)
             print('Time {} '.format(datetime.datetime.now()),
                   'Epoch {} : '.format(e + 1),
-                  'Training Loss = {:.9f}'.format(avg_loss),
+                  'Training Loss = {:.9f} '.format(avg_loss),
+                  'lr = {} '.format(self.lr),
                   )
         torch.save(train_loss, os.path.join(self.save_path, 'trainloss.bin'))
         print('Learning Finished')
+
+    def test(self):
+        train_loader = tordata.DataLoader(
+            dataset=self.test_source,
+            batch_size=self.batch_size,
+            num_workers=4,
+            shuffle=True,
+        )
+        for encoder in self.encoders:
+            encoder.eval()
+        for expert in self.experts:
+            expert.eval()
+
+        test_loss = []
+        for x, y in tqdm(train_loader):
+            batch_nums = x.size()[0]
+            weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
+            status_outputs = []
+            for i, encoder in enumerate(self.encoders):
+                status_output = encoder(x[:, self.segmentation[i]:self.segmentation[i + 1]])
+                status_outputs.append(status_output)
+            status = torch.cat(tuple(status_outputs), 1)
+
+            # Gating Network
+            expert_first = self.experts[0]
+            weight_blend = expert_first(weight_blend_first, x[:, self.segmentation[-2]:self.segmentation[-1]])
+
+            # Motion Network
+            expert_last = self.experts[-1]
+            output = expert_last(weight_blend, status)
+
+            # loss
+            y = y.cuda()
+            loss = self.loss_function(output, y)
+            test_loss.append(loss.item())
+
+        avg_loss = np.asarray(test_loss).mean()
+        print('Testing Finished')

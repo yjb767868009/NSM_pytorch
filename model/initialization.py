@@ -13,6 +13,8 @@ def initialize_model(config, train_source, test_source):
     model_config['test_source'] = test_source
     model = Model(**model_config)
     print("Model initialization complete.")
+    if config["load_path"]:
+        model.load(config["load_path"])
     return model
 
 
