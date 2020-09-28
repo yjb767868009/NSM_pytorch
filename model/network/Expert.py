@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -19,7 +20,7 @@ class Expert(nn.Module):
         self.D = []
         self.A = []
         for i in range(self.layer_nums):
-            w = torch.randn(self.expert_nums, self.expert_dims[i + 1], self.expert_dims[i]).cuda()
+            w = self.init_weight((self.expert_nums, self.expert_dims[i + 1], self.expert_dims[i]))
             self.W.append(nn.Parameter(w))
             b = torch.zeros(self.expert_nums, self.expert_dims[i + 1], 1).cuda()
             self.B.append(nn.Parameter(b))
@@ -31,14 +32,21 @@ class Expert(nn.Module):
             x = self.D[i](x)
             x = x.unsqueeze(-1)
             weight = self.get_wb(self.W[i], weight_blend)
+            print(weight[1])
             t = torch.bmm(weight, x)
             bias = self.get_wb(self.B[i], weight_blend)
             x = torch.add(t, bias)
             x = x.squeeze(-1)
-
             if self.A[i]:
                 x = self.A[i](x)
         return x
+
+    def init_weight(self, shape):
+        a = np.sqrt(6. / np.prod(shape[-2:]))
+        w = np.asarray(
+            np.random.uniform(low=-a, high=a, size=shape),
+            dtype=np.float32)
+        return torch.Tensor(w).cuda()
 
     def get_wb(self, x, weight_blend):
         """
@@ -65,8 +73,8 @@ class Expert(nn.Module):
         """
         for i in range(self.layer_nums):
             for j in range(self.expert_nums):
-                self.W[i][j, :, :].detach().numpy().tofile(
+                self.W[i][j, :, :].cpu().detach().numpy().tofile(
                     os.path.join(save_path, 'wc%0i%0i%0i_w.bin' % (expert_index, i, j)))
-                self.B[i][j, :, :].detach().numpy().tofile(
+                self.B[i][j, :, :].cpu().detach().numpy().tofile(
                     os.path.join(save_path, 'wc%0i%0i%0i_b.bin' % (expert_index, i, j))
                 )

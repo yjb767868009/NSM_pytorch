@@ -1,9 +1,11 @@
 conf = {
-    "save_path": "/home/new_disk/yujubo/NSM/trained/",
+    #"save_path": "/home/new_disk/yujubo/NSM/trained/",
+    "save_path":"/media/fish/data/NSM/trained",
     "load_path": None,
-    "CUDA_VISIBLE_DEVICES": "1,2",
+    "CUDA_VISIBLE_DEVICES": "0",
     "data": {
-        'dataset_path': "/home/new_disk/yujubo/NSM/Export2",
+        #'dataset_path': "/home/new_disk/yujubo/NSM/Export2",
+        'dataset_path':"/media/fish/data/NSM/data1",
     },
     "model": {
         'model_name': 'NSM',
