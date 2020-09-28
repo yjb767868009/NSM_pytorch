@@ -20,7 +20,7 @@ print('cuda is available:', torch.cuda.is_available())
 class Model(object):
     def __init__(self,
                  # For Model base information
-                 model_name, epoch, batch_size, segmentation, save_path,
+                 model_name, epoch, batch_size, segmentation, save_path, load_path,
                  # For Date information
                  train_source, test_source,
                  # For encoder network information
@@ -35,6 +35,7 @@ class Model(object):
         self.batch_size = batch_size
         self.segmentation = segmentation
         self.save_path = save_path
+        self.load_path = load_path
 
         self.train_source = train_source
         self.test_source = test_source

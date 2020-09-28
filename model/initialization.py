@@ -9,12 +9,11 @@ def initialize_model(config, train_source, test_source):
     print("Initializing model...")
     model_config = config['model']
     model_config['save_path'] = config['save_path']
+    model_config['load_path'] = config['load_path']
     model_config['train_source'] = train_source
     model_config['test_source'] = test_source
     model = Model(**model_config)
     print("Model initialization complete.")
-    if config["load_path"]:
-        model.load(config["load_path"])
     return model
 
 

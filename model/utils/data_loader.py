@@ -29,5 +29,5 @@ def load_data(dataset_path, save_path, cache=True):
                           output_data, output_data.shape[1], output_mean, output_std,
                           input_data.shape[0], cache)
     train_source = data_source
-    test_source = None
+    test_source = data_source
     return train_source, test_source
