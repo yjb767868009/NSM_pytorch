@@ -9,6 +9,7 @@ def initialize_model(config, train_source, test_source):
     print("Initializing model...")
     model_config = config['model']
     model_config['save_path'] = config['save_path']
+    model_config['load_path'] = config['load_path']
     model_config['train_source'] = train_source
     model_config['test_source'] = test_source
     model = Model(**model_config)
@@ -17,7 +18,7 @@ def initialize_model(config, train_source, test_source):
 
 
 def initialization(config, train=False, test=False):
-    print("Initialzing...")
+    print("Initializing...")
     save_path = config['save_path']
     os.chdir(save_path)
     os.environ["CUDA_VISIBLE_DEVICES"] = config["CUDA_VISIBLE_DEVICES"]

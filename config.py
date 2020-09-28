@@ -1,8 +1,9 @@
 conf = {
     "save_path": "/home/new_disk/yujubo/NSM/trained/",
-    "CUDA_VISIBLE_DEVICES": "2",
+    "load_path": None,
+    "CUDA_VISIBLE_DEVICES": "1,2",
     "data": {
-        'dataset_path': "/home/new_disk/yujubo/NSM/Export2/",
+        'dataset_path': "/home/new_disk/yujubo/NSM/Export2",
     },
     "model": {
         'model_name': 'NSM',
@@ -18,13 +19,13 @@ conf = {
                                 ['elu', 'elu'],
                                 ['elu', 'elu'],
                                 ['elu', 'elu']],
-        'encoder_keep_prob': 0.3,
+        'encoder_dropout': 0.3,
         'expert_components': [1, 10],
         'expert_dims': [[650, 512, 512, 10],
                         [1664, 512, 512, 618]],
         'expert_activations': [['elu', 'elu', 'softmax'],
                                ['elu', 'elu', None]],
-        'expert_keep_prob': 0.7,
+        'expert_dropout': 0.3,
         'lr': 0.0001,
     },
 }

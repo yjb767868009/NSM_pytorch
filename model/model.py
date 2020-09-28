@@ -1,9 +1,9 @@
+import os
 import numpy as np
 import datetime
 from tqdm import tqdm
 import torch
 import torch.nn as nn
-import torch.autograd as autograd
 import torch.optim as optim
 import torch.utils
 import torch.utils.cpp_extension
@@ -11,17 +11,23 @@ import torch.utils.data as tordata
 
 from .network import Expert, Encoder
 
-print('CUDA_HOME:', torch.utils.cpp_extension.CUDA_HOME)  # 输出 Pytorch 运行时使用的 cuda
+# Check GPU available
+print('CUDA_HOME:', torch.utils.cpp_extension.CUDA_HOME)
 print('torch cuda version:', torch.version.cuda)
 print('cuda is available:', torch.cuda.is_available())
 
 
 class Model(object):
     def __init__(self,
-                 model_name, epoch, batch_size, segmentation, save_path,
+                 # For Model base information
+                 model_name, epoch, batch_size, segmentation, save_path, load_path,
+                 # For Date information
                  train_source, test_source,
-                 encoder_nums, encoder_dims, encoder_activations, encoder_keep_prob,
-                 expert_components, expert_dims, expert_activations, expert_keep_prob,
+                 # For encoder network information
+                 encoder_nums, encoder_dims, encoder_activations, encoder_dropout,
+                 # For expert network information
+                 expert_components, expert_dims, expert_activations, expert_dropout,
+                 # optim param
                  lr,
                  ):
         self.model_name = model_name
@@ -29,28 +35,33 @@ class Model(object):
         self.batch_size = batch_size
         self.segmentation = segmentation
         self.save_path = save_path
+        self.load_path = load_path
 
         self.train_source = train_source
         self.test_source = test_source
 
+        # build encoder network
         self.encoder_nums = encoder_nums
         self.encoders = []
         for i in range(encoder_nums):
-            encoder = Encoder(encoder_dims[i], encoder_activations[i], encoder_keep_prob)
+            encoder = Encoder(encoder_dims[i], encoder_activations[i], encoder_dropout)
             encoder = nn.DataParallel(encoder)
             encoder.cuda()
             self.encoders.append(encoder)
 
+        # build expert network
         self.expert_nums = len(expert_components)
         self.experts = []
         for i in range(self.expert_nums):
-            expert = Expert(expert_components[i], expert_dims[i], expert_activations[i], expert_keep_prob)
+            expert = Expert(expert_components[i], expert_dims[i], expert_activations[i], expert_dropout)
             expert = nn.DataParallel(expert)
             expert.cuda()
             self.experts.append(expert)
 
+        # weight blend init
         self.weight_blend_init = torch.Tensor([1]).cuda()
 
+        # build optimizer
         params_list = []
         for e in self.encoders:
             params_list.append({'params': e.parameters()})
@@ -60,7 +71,14 @@ class Model(object):
         self.optimizer = optim.AdamW(params_list,
                                      lr=self.lr)
 
+        # build loss function
         self.loss_function = nn.SmoothL1Loss()
+
+    def load(self, load_path):
+        for i in range(self.encoder_nums):
+            self.encoders[i].load_state_dict(torch.load(os.path.join(load_path, 'encoder%0i.pth' % i)))
+        for i in range(self.expert_nums):
+            self.experts[i].load_state_dict(torch.load(os.path.join(load_path, 'expert%0i.pth' % i)))
 
     def train(self):
         train_loader = tordata.DataLoader(
@@ -77,6 +95,10 @@ class Model(object):
         train_loss = []
         for e in range(self.epoch):
             loss_list = []
+            if e % 50 == 0:
+                self.lr = self.lr / 10
+                for param_group in self.optimizer.param_groups:
+                    param_group['lr'] = self.lr
             for x, y in tqdm(train_loader):
                 batch_nums = x.size()[0]
                 weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
@@ -87,11 +109,15 @@ class Model(object):
                     status_outputs.append(status_output)
                 status = torch.cat(tuple(status_outputs), 1)
 
+                # Gating Network
                 expert_first = self.experts[0]
                 weight_blend = expert_first(weight_blend_first, x[:, self.segmentation[-2]:self.segmentation[-1]])
 
+                # Motion Network
                 expert_last = self.experts[-1]
                 output = expert_last(weight_blend, status)
+
+                # loss
                 y = y.cuda()
                 loss = self.loss_function(output, y)
                 loss_list.append(loss.item())
@@ -99,16 +125,61 @@ class Model(object):
                 loss.backward()
                 self.optimizer.step()
             if e % 10 == 0:
-                self.save()
+                # save param for unity
+                for i in range(self.encoder_nums):
+                    self.encoders[i].module.save_network(i, self.save_path)
+                for i in range(self.expert_nums):
+                    self.experts[i].module.save_network(i, self.save_path)
+                # save model for load weights
+                for i in range(self.encoder_nums):
+                    torch.save(self.encoders[i], os.path.join(self.save_path, 'encoder%0i.pth' % i))
+                for i in range(self.expert_nums):
+                    torch.save(self.experts[i], os.path.join(self.save_path, 'encoder%0i.pth' % i))
+
             avg_loss = np.asarray(loss_list).mean()
             train_loss.append(avg_loss)
             print('Time {} '.format(datetime.datetime.now()),
                   'Epoch {} : '.format(e + 1),
-                  'Training Loss = {:.9f}'.format(avg_loss),
+                  'Training Loss = {:.9f} '.format(avg_loss),
+                  'lr = {} '.format(self.lr),
                   )
+        torch.save(train_loss, os.path.join(self.save_path, 'trainloss.bin'))
+        print('Learning Finished')
 
-    def save(self):
-        for i in range(self.encoder_nums):
-            self.encoders[i].module.save_network(i, self.save_path)
-        for i in range(self.expert_nums):
-            self.experts[i].module.save_network(i, self.save_path)
+    def test(self):
+        train_loader = tordata.DataLoader(
+            dataset=self.test_source,
+            batch_size=self.batch_size,
+            num_workers=4,
+            shuffle=True,
+        )
+        for encoder in self.encoders:
+            encoder.eval()
+        for expert in self.experts:
+            expert.eval()
+
+        test_loss = []
+        for x, y in tqdm(train_loader):
+            batch_nums = x.size()[0]
+            weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
+            status_outputs = []
+            for i, encoder in enumerate(self.encoders):
+                status_output = encoder(x[:, self.segmentation[i]:self.segmentation[i + 1]])
+                status_outputs.append(status_output)
+            status = torch.cat(tuple(status_outputs), 1)
+
+            # Gating Network
+            expert_first = self.experts[0]
+            weight_blend = expert_first(weight_blend_first, x[:, self.segmentation[-2]:self.segmentation[-1]])
+
+            # Motion Network
+            expert_last = self.experts[-1]
+            output = expert_last(weight_blend, status)
+
+            # loss
+            y = y.cuda()
+            loss = self.loss_function(output, y)
+            test_loss.append(loss.item())
+
+        avg_loss = np.asarray(test_loss).mean()
+        print('Testing Finished')
