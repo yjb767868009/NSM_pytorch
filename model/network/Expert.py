@@ -32,7 +32,6 @@ class Expert(nn.Module):
             x = self.D[i](x)
             x = x.unsqueeze(-1)
             weight = self.get_wb(self.W[i], weight_blend)
-            print(weight[1])
             t = torch.bmm(weight, x)
             bias = self.get_wb(self.B[i], weight_blend)
             x = torch.add(t, bias)

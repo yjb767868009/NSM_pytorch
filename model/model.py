@@ -45,8 +45,8 @@ class Model(object):
         self.encoders = []
         for i in range(encoder_nums):
             encoder = Encoder(encoder_dims[i], encoder_activations[i], encoder_dropout)
-            encoder = nn.DataParallel(encoder)
             encoder.cuda()
+            encoder = nn.DataParallel(encoder)
             self.encoders.append(encoder)
 
         # build expert network
@@ -54,8 +54,8 @@ class Model(object):
         self.experts = []
         for i in range(self.expert_nums):
             expert = Expert(expert_components[i], expert_dims[i], expert_activations[i], expert_dropout)
-            expert = nn.DataParallel(expert)
             expert.cuda()
+            expert = nn.DataParallel(expert)
             self.experts.append(expert)
 
         # weight blend init
