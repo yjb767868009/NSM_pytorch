@@ -1,15 +1,15 @@
 conf = {
-    "save_path": "/media/fish/data/NSM/trained",
+    "save_path": "/home/new_disk/yujubo/NSM/trained/",
     "load_path": None,
-    "CUDA_VISIBLE_DEVICES": "0",
-    "CUDA_USE": [0],
+    "CUDA_VISIBLE_DEVICES": "0,1,2",
+    "CUDA_USE": [1, 2],
     "data": {
-        'dataset_path': "/media/fish/data/NSM/data1",
+        'dataset_path': "/home/new_disk/yujubo/NSM/Export2",
     },
     "model": {
         'model_name': 'NSM',
         'epoch': 150,
-        'batch_size': 64,
+        'batch_size': 128,
         'segmentation': [0, 419, 575, 2609, 4657, 5307],
         'encoder_nums': 4,
         'encoder_dims': [[419, 512, 512],

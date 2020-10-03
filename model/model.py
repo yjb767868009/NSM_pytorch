@@ -1,3 +1,9 @@
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s  %(message)s',
+                    filename='log.txt')
+
 import os
 import numpy as np
 import datetime
@@ -15,12 +21,14 @@ from .network import Expert, Encoder
 print('CUDA_HOME:', torch.utils.cpp_extension.CUDA_HOME)
 print('torch cuda version:', torch.version.cuda)
 print('cuda is available:', torch.cuda.is_available())
+print('gpu use:', torch.cuda.current_device())
 
 
 class Model(object):
     def __init__(self,
                  # For Model base information
                  model_name, epoch, batch_size, segmentation, save_path, load_path,
+                 gpu_list,
                  # For Date information
                  train_source, test_source,
                  # For encoder network information
@@ -36,6 +44,7 @@ class Model(object):
         self.segmentation = segmentation
         self.save_path = save_path
         self.load_path = load_path
+        self.gpu_list = gpu_list
 
         self.train_source = train_source
         self.test_source = test_source
@@ -46,7 +55,7 @@ class Model(object):
         for i in range(encoder_nums):
             encoder = Encoder(encoder_dims[i], encoder_activations[i], encoder_dropout)
             encoder.cuda()
-            encoder = nn.DataParallel(encoder)
+            encoder = nn.DataParallel(encoder, device_ids=gpu_list)
             self.encoders.append(encoder)
 
         # build expert network
@@ -55,7 +64,7 @@ class Model(object):
         for i in range(self.expert_nums):
             expert = Expert(expert_components[i], expert_dims[i], expert_activations[i], expert_dropout)
             expert.cuda()
-            expert = nn.DataParallel(expert)
+            expert = nn.DataParallel(expert, device_ids=gpu_list)
             self.experts.append(expert)
 
         # weight blend init
@@ -116,7 +125,6 @@ class Model(object):
                 # Motion Network
                 expert_last = self.experts[-1]
                 output = expert_last(weight_blend, status)
-
                 # loss
                 y = y.cuda()
                 loss = self.loss_function(output, y)
@@ -143,6 +151,9 @@ class Model(object):
                   'Training Loss = {:.9f} '.format(avg_loss),
                   'lr = {} '.format(self.lr),
                   )
+            logging.info('Epoch {} : '.format(e + 1) +
+                         'Training Loss = {:.9f} '.format(avg_loss) +
+                         'lr = {} '.format(self.lr))
         torch.save(train_loss, os.path.join(self.save_path, 'trainloss.bin'))
         print('Learning Finished')
 
