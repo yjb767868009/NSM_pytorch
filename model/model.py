@@ -80,11 +80,14 @@ class Model(object):
         # build loss function
         self.loss_function = nn.SmoothL1Loss()
 
-    def load(self, load_path):
+    def load(self):
+        print('Loading parm...')
         for i in range(self.encoder_nums):
-            self.encoders[i].load_state_dict(torch.load(os.path.join(load_path, 'encoder%0i.pth' % i)))
+            self.encoders[i].load_state_dict(torch.load(os.path.join(self.load_path, 'encoder%0i.pth' % i)))
         for i in range(self.expert_nums):
-            self.experts[i].load_state_dict(torch.load(os.path.join(load_path, 'expert%0i.pth' % i)))
+            self.experts[i].load_state_dict(torch.load(os.path.join(self.load_path, 'expert%0i.pth' % i)))
+        self.optimizer.load_state_dict(torch.load(os.path.join(self.load_path, 'optimizer.ptm')))
+        print('Loading param complete')
 
     def train(self):
         train_loader = tordata.DataLoader(
@@ -137,9 +140,10 @@ class Model(object):
                     self.experts[i].module.save_network(i, self.save_path)
                 # save model for load weights
                 for i in range(self.encoder_nums):
-                    torch.save(self.encoders[i], os.path.join(self.save_path, 'encoder%0i.pth' % i))
+                    torch.save(self.encoders[i].state_dict(), os.path.join(self.save_path, 'encoder%0i.pth' % i))
                 for i in range(self.expert_nums):
-                    torch.save(self.experts[i], os.path.join(self.save_path, 'encoder%0i.pth' % i))
+                    torch.save(self.experts[i].state_dict(), os.path.join(self.save_path, 'expert%0i.pth' % i))
+                torch.save(self.optimizer.state_dict(), os.path.join(self.save_path, 'optimizer.ptm'))
 
             avg_loss = np.asarray(loss_list).mean()
             train_loss.append(avg_loss)
@@ -155,6 +159,7 @@ class Model(object):
         print('Learning Finished')
 
     def test(self):
+        self.load()
         train_loader = tordata.DataLoader(
             dataset=self.test_source,
             batch_size=self.batch_size,
@@ -190,4 +195,5 @@ class Model(object):
             test_loss.append(loss.item())
 
         avg_loss = np.asarray(test_loss).mean()
+        print('Testing Loss = {:.9f} '.format(avg_loss))
         print('Testing Finished')
