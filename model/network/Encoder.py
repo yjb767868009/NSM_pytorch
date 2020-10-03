@@ -27,7 +27,7 @@ class Encoder(torch.nn.Module):
 
     def save_network(self, encoder_index, save_path):
         for i in range(self.layer_nums):
-            torch.save(self.state_dict()['layer%0i.1.weight' % (i + 1)],
-                       os.path.join(save_path, 'encoder%0i_w%0i.bin' % (encoder_index, i)))
-            torch.save(self.state_dict()['layer%0i.1.bias' % (i + 1)],
-                       os.path.join(save_path, 'encoder%0i_b%0i.bin' % (encoder_index, i)))
+            self.state_dict()['layer%0i.1.weight' % (i + 1)].cpu().detach().numpy().tofile(
+                os.path.join(save_path, 'encoder%0i_w%0i.bin' % (encoder_index, i)))
+            self.state_dict()['layer%0i.1.bias' % (i + 1)].cpu().detach().numpy().tofile(
+                os.path.join(save_path, 'encoder%0i_b%0i.bin' % (encoder_index, i)))
