@@ -21,14 +21,12 @@ from .network import Expert, Encoder
 print('CUDA_HOME:', torch.utils.cpp_extension.CUDA_HOME)
 print('torch cuda version:', torch.version.cuda)
 print('cuda is available:', torch.cuda.is_available())
-print('gpu use:', torch.cuda.current_device())
 
 
 class Model(object):
     def __init__(self,
                  # For Model base information
                  model_name, epoch, batch_size, segmentation, save_path, load_path,
-                 gpu_list,
                  # For Date information
                  train_source, test_source,
                  # For encoder network information
@@ -44,7 +42,6 @@ class Model(object):
         self.segmentation = segmentation
         self.save_path = save_path
         self.load_path = load_path
-        self.gpu_list = gpu_list
 
         self.train_source = train_source
         self.test_source = test_source
@@ -55,7 +52,7 @@ class Model(object):
         for i in range(encoder_nums):
             encoder = Encoder(encoder_dims[i], encoder_activations[i], encoder_dropout)
             encoder.cuda()
-            encoder = nn.DataParallel(encoder, device_ids=gpu_list)
+            encoder = nn.DataParallel(encoder)
             self.encoders.append(encoder)
 
         # build expert network
@@ -64,7 +61,7 @@ class Model(object):
         for i in range(self.expert_nums):
             expert = Expert(expert_components[i], expert_dims[i], expert_activations[i], expert_dropout)
             expert.cuda()
-            expert = nn.DataParallel(expert, device_ids=gpu_list)
+            expert = nn.DataParallel(expert)
             self.experts.append(expert)
 
         # weight blend init
