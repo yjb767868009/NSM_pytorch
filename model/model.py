@@ -51,7 +51,8 @@ class Model(object):
         self.encoders = []
         for i in range(encoder_nums):
             encoder = Encoder(encoder_dims[i], encoder_activations[i], encoder_dropout)
-            encoder.cuda()
+            if torch.cuda.is_available():
+                encoder.cuda()
             encoder = nn.DataParallel(encoder)
             self.encoders.append(encoder)
 
@@ -60,12 +61,15 @@ class Model(object):
         self.experts = []
         for i in range(self.expert_nums):
             expert = Expert(expert_components[i], expert_dims[i], expert_activations[i], expert_dropout)
-            expert.cuda()
+            if torch.cuda.is_available():
+                expert.cuda()
             expert = nn.DataParallel(expert)
             self.experts.append(expert)
 
         # weight blend init
-        self.weight_blend_init = torch.Tensor([1]).cuda()
+        self.weight_blend_init = torch.Tensor([1])
+        if torch.cuda.is_available():
+            self.weight_blend_init=self.weight_blend_init.cuda()
 
         # build optimizer
         params_list = []
@@ -108,7 +112,7 @@ class Model(object):
                 self.lr = self.lr / 10
                 for param_group in self.optimizer.param_groups:
                     param_group['lr'] = self.lr
-            for x, y in tqdm(train_loader):
+            for x, y in tqdm(train_loader,ncols=100):
                 batch_nums = x.size()[0]
                 weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
                 self.optimizer.zero_grad()
@@ -125,8 +129,10 @@ class Model(object):
                 # Motion Network
                 expert_last = self.experts[-1]
                 output = expert_last(weight_blend, status)
+
                 # loss
-                y = y.cuda()
+                if torch.cuda.is_available():
+                    y = y.cuda()
                 loss = self.loss_function(output, y)
                 loss_list.append(loss.item())
 
@@ -172,7 +178,7 @@ class Model(object):
             expert.eval()
 
         test_loss = []
-        for x, y in tqdm(train_loader):
+        for x, y in tqdm(train_loader,ncols=100):
             batch_nums = x.size()[0]
             weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
             status_outputs = []
@@ -190,7 +196,8 @@ class Model(object):
             output = expert_last(weight_blend, status)
 
             # loss
-            y = y.cuda()
+            if torch.cuda.is_available():
+                y = y.cuda()
             loss = self.loss_function(output, y)
             test_loss.append(loss.item())
 

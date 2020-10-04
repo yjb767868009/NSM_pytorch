@@ -21,8 +21,12 @@ class Expert(nn.Module):
         self.A = []
         for i in range(self.layer_nums):
             w = self.init_weight((self.expert_nums, self.expert_dims[i + 1], self.expert_dims[i]))
+            if torch.cuda.is_available():
+                w=w.cuda()
             self.W.append(nn.Parameter(w))
-            b = torch.zeros(self.expert_nums, self.expert_dims[i + 1], 1).cuda()
+            b = torch.zeros(self.expert_nums, self.expert_dims[i + 1], 1)
+            if torch.cuda.is_available():
+                b=b.cuda()
             self.B.append(nn.Parameter(b))
             self.D.append(nn.Dropout(p=expert_dropout))
             self.A.append(activation_layer(self.expert_activations[i]))
@@ -45,7 +49,7 @@ class Expert(nn.Module):
         w = np.asarray(
             np.random.uniform(low=-a, high=a, size=shape),
             dtype=np.float32)
-        return torch.Tensor(w).cuda()
+        return torch.Tensor(w)
 
     def get_wb(self, x, weight_blend):
         """
