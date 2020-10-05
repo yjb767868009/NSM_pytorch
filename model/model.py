@@ -1,9 +1,4 @@
 import logging
-
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s  %(message)s',
-                    filename='log.txt')
-
 import os
 import numpy as np
 import datetime
@@ -69,7 +64,7 @@ class Model(object):
         # weight blend init
         self.weight_blend_init = torch.Tensor([1])
         if torch.cuda.is_available():
-            self.weight_blend_init=self.weight_blend_init.cuda()
+            self.weight_blend_init = self.weight_blend_init.cuda()
 
         # build optimizer
         params_list = []
@@ -82,7 +77,11 @@ class Model(object):
                                      lr=self.lr)
 
         # build loss function
-        self.loss_function = nn.SmoothL1Loss()
+        self.loss_function = nn.MSELoss(reduction='mean')
+
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s  %(message)s',
+                            filename=os.path.join(self.save_path, 'log.txt'))
 
     def load(self):
         print('Loading parm...')
@@ -112,7 +111,7 @@ class Model(object):
                 self.lr = self.lr / 10
                 for param_group in self.optimizer.param_groups:
                     param_group['lr'] = self.lr
-            for x, y in tqdm(train_loader,ncols=100):
+            for x, y in tqdm(train_loader, ncols=100):
                 batch_nums = x.size()[0]
                 weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
                 self.optimizer.zero_grad()
@@ -178,7 +177,7 @@ class Model(object):
             expert.eval()
 
         test_loss = []
-        for x, y in tqdm(train_loader,ncols=100):
+        for x, y in tqdm(train_loader, ncols=100):
             batch_nums = x.size()[0]
             weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
             status_outputs = []
