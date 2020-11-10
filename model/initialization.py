@@ -22,6 +22,6 @@ def initialization(config, train=False, test=False):
     save_path = config['save_path']
     os.environ["CUDA_VISIBLE_DEVICES"] = config["CUDA_VISIBLE_DEVICES"]
     print("Initializing data source...")
-    train_source, test_source = load_data(**config['data'], save_path=save_path, cache=(train or test))
+    train_source, test_source = load_data(**config['data'], cache=(train or test))
     print("Data initialization complete.")
     return initialize_model(config, train_source, test_source)

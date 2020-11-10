@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-from .data_set import DataSet
+from .all_data_set import DataSet
 
 
 def normalize(X, N, save_path=None):
