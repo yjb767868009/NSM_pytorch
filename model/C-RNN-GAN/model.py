@@ -83,8 +83,8 @@ class Model(object):
 
         # build Discriminative network
         self.discriminative = build_network('Discriminative',
-                                                 discriminative_dims, discriminative_activations,
-                                                 discriminative_dropout)
+                                            discriminative_dims, discriminative_activations,
+                                            discriminative_dropout)
 
         # build optimizer
         params_list = []
@@ -95,6 +95,9 @@ class Model(object):
         self.lr = lr
         self.optimizer = optim.AdamW(params_list,
                                      lr=self.lr)
+
+        self.refiner_optimizer = optim.RMSprop(self.refiner.parameters())
+        self.discriminative_optimizer = optim.RMSprop(self.discriminative.parameters())
 
         # build loss function
         self.loss_function = nn.MSELoss(reduction='mean')
