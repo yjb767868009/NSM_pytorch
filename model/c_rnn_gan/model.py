@@ -101,6 +101,9 @@ class Model(object):
 
         # build loss function
         self.loss_function = nn.MSELoss(reduction='mean')
+        # todo refiner and discriminative loss
+        self.refiner_loss_function = nn.BCELoss()
+        self.discriminative_loss_function = nn.BCELoss()
 
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s  %(message)s',
@@ -116,6 +119,7 @@ class Model(object):
         print('Loading param complete')
 
     def train(self):
+        print("Training START")
         train_loader = tordata.DataLoader(
             dataset=self.train_source,
             batch_size=self.batch_size,
@@ -184,7 +188,97 @@ class Model(object):
                          'Training Loss = {:.9f} '.format(avg_loss) +
                          'lr = {} '.format(self.lr))
         torch.save(train_loss, os.path.join(self.save_path, 'trainloss.bin'))
-        print('Learning Finished')
+        print("Training COMPLETE")
+
+    def train_gan(self):
+        self.load()
+        print("Training GAN")
+
+        train_loader = tordata.DataLoader(
+            dataset=self.train_source,
+            batch_size=self.batch_size,
+            num_workers=4,
+            shuffle=True,
+        )
+        for encoder in self.encoders:
+            encoder.eval()
+        for expert in self.experts:
+            expert.eval()
+
+        train_refiner_loss = []
+        train_discriminative_loss = []
+        for e in range(self.epoch):
+            refiner_loss_list = []
+            discriminative_loss_list = []
+            if e % 50 == 0:
+                self.lr = self.lr / 10
+                for param_group in self.optimizer.param_groups:
+                    param_group['lr'] = self.lr
+            for x, y in tqdm(train_loader, ncols=100):
+                batch_nums = x.size()[0]
+
+                # Generate NSM output
+                weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
+                status_outputs = []
+                for i, encoder in enumerate(self.encoders):
+                    status_output = encoder(x[:, self.segmentation[i]:self.segmentation[i + 1]])
+                    status_outputs.append(status_output)
+                status = torch.cat(tuple(status_outputs), 1)
+                expert_first = self.experts[0]
+                weight_blend = expert_first(weight_blend_first, x[:, self.segmentation[-2]:self.segmentation[-1]])
+                expert_last = self.experts[-1]
+                output = expert_last(weight_blend, status)
+
+                # Train Discriminative Network
+                self.refiner_optimizer.zero_grad()
+                self.discriminative_optimizer.zero_grad()
+
+                # Generate real and fake data label
+                real_label = torch.autograd.Variable(torch.ones(batch_nums))
+                fake_label = torch.autograd.Variable(torch.zeros(batch_nums))
+                if torch.cuda.is_available():
+                    real_label = real_label.cuda()
+                    fake_label = fake_label.cuda()
+
+                # Real data's loss
+                real_out = self.discriminative(y)
+                discriminative_real_loss = self.discriminative_loss_function(real_out, real_label)
+                discriminative_loss_list.append(discriminative_real_loss.item())
+
+                # Fake data's loss
+                fake_data = self.refiner(output)
+                fake_out = self.discriminative(fake_data)
+                discriminative_fake_loss = self.discriminative_loss_function(fake_out, fake_label)
+
+                # loss backward and renew optimizer
+                discriminative_loss = discriminative_real_loss + discriminative_fake_loss
+                discriminative_loss.backward()
+                self.discriminative_optimizer.step()
+
+                # Train Refiner Network
+                fake_data = self.refiner(output)
+                fake_out = self.discriminative(fake_data)
+                refiner_loss = self.refiner_loss_function(fake_out, real_label)
+                refiner_loss_list.append(refiner_loss.item())
+                refiner_loss.backward()
+                self.refiner_optimizer.step()
+
+            avg_refiner_loss = np.asarray(refiner_loss_list).mean()
+            train_refiner_loss.append(avg_refiner_loss)
+            avg_discriminative_loss = np.asarray(discriminative_loss_list).mean()
+            train_discriminative_loss.append(avg_discriminative_loss)
+
+            print('Time {} '.format(datetime.datetime.now()),
+                  'Epoch {} : '.format(e + 1),
+                  'Refiner Loss = {:.9f} '.format(avg_refiner_loss),
+                  'Discriminative Loss = {:.9f} '.format(avg_discriminative_loss),
+                  'lr = {} '.format(self.lr),
+                  )
+            logging.info('Epoch {} : '.format(e + 1) +
+                         'Refiner Loss = {:.9f} '.format(avg_refiner_loss) +
+                         'Discriminative Loss = {:.9f} '.format(avg_discriminative_loss) +
+                         'lr = {} '.format(self.lr))
+        print('Training GAN COMPLETE')
 
     def test(self):
         self.load()

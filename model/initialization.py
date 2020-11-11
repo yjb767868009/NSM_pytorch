@@ -2,7 +2,8 @@ import os
 from copy import deepcopy
 import numpy as np
 from .utils import load_data
-from .model import Model
+from .c_rnn_gan.model import Model
+from .c_rnn_gan.config import conf
 
 
 def initialize_model(config, train_source, test_source):
@@ -17,11 +18,11 @@ def initialize_model(config, train_source, test_source):
     return model
 
 
-def initialization(config, train=False, test=False):
+def initialization(train=False, test=False):
     print("Initializing...")
-    save_path = config['save_path']
-    os.environ["CUDA_VISIBLE_DEVICES"] = config["CUDA_VISIBLE_DEVICES"]
+    save_path = conf['save_path']
+    os.environ["CUDA_VISIBLE_DEVICES"] = conf["CUDA_VISIBLE_DEVICES"]
     print("Initializing data source...")
-    train_source, test_source = load_data(**config['data'], cache=(train or test))
+    train_source, test_source = load_data(**conf['data'], save_path=save_path, cache=(train or test))
     print("Data initialization complete.")
-    return initialize_model(config, train_source, test_source)
+    return initialize_model(conf, train_source, test_source)
