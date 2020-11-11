@@ -15,8 +15,8 @@ class DataSet(tordata.Dataset):
         self.data_size = len(os.listdir(self.input_data_dir))
         assert self.data_size == len(os.listdir(self.output_data_dir)), 'input size!= output size'
 
-        self.input_data = [None for _ in range(self.data_size)]
-        self.output_data = [None for _ in range(self.data_size)]
+        self.input_data = [None for _ in range(self.data_size + 1)]
+        self.output_data = [None for _ in range(self.data_size + 1)]
 
         self.cache = cache
 

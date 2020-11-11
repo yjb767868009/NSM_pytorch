@@ -13,9 +13,10 @@ import torch.utils.data as tordata
 from ..network import *
 
 # Check GPU available
-print('CUDA_HOME:', torch.utils.cpp_extension.CUDA_HOME)
-print('torch cuda version:', torch.version.cuda)
-print('cuda is available:', torch.cuda.is_available())
+if torch.cuda.is_available():
+    print('CUDA_HOME:', torch.utils.cpp_extension.CUDA_HOME)
+    print('torch cuda version:', torch.version.cuda)
+    print('cuda is available:', torch.cuda.is_available())
 
 
 def build_network(name, dims, activations, dropout):
@@ -34,8 +35,8 @@ class Model(object):
                  train_source, test_source,
                  # For encoder network information
                  encoder_nums, encoder_dims, encoder_activations, encoder_dropout,
-                 # For expert network information
-                 expert_components, expert_dims, expert_activations, expert_dropout,
+                 # For RNN network information
+                 rnn_dims, rnn_activations, rnn_dropout,
                  # For Refiner network information
                  refiner_dims, refiner_activations, refiner_dropout,
                  # For Discriminative network information
@@ -63,39 +64,24 @@ class Model(object):
             encoder = nn.DataParallel(encoder)
             self.encoders.append(encoder)
 
-        # build expert network
-        self.expert_nums = len(expert_components)
-        self.experts = []
-        for i in range(self.expert_nums):
-            expert = Expert(expert_components[i], expert_dims[i], expert_activations[i], expert_dropout)
-            if torch.cuda.is_available():
-                expert.cuda()
-            expert = nn.DataParallel(expert)
-            self.experts.append(expert)
-
-        # weight blend init
-        self.weight_blend_init = torch.Tensor([1])
-        if torch.cuda.is_available():
-            self.weight_blend_init = self.weight_blend_init.cuda()
+        # build RNN network
+        self.rnn = build_network('RNN', rnn_dims, rnn_activations, rnn_dropout)
 
         # build Refiner network
         self.refiner = build_network('Refiner', refiner_dims, refiner_activations, refiner_dropout)
 
         # build Discriminative network
-        self.discriminative = build_network('Discriminative',
-                                            discriminative_dims, discriminative_activations,
+        self.discriminative = build_network('Discriminative', discriminative_dims, discriminative_activations,
                                             discriminative_dropout)
 
         # build optimizer
         params_list = []
         for e in self.encoders:
             params_list.append({'params': e.parameters()})
-        for e in self.experts:
-            params_list.append({'params': e.parameters()})
         self.lr = lr
-        self.optimizer = optim.AdamW(params_list,
-                                     lr=self.lr)
-
+        self.encoder_optimizer = optim.AdamW(params_list,
+                                             lr=self.lr)
+        self.rnn_optimizer = optim.Adam(self.rnn.parameters())
         self.refiner_optimizer = optim.RMSprop(self.refiner.parameters())
         self.discriminative_optimizer = optim.RMSprop(self.discriminative.parameters())
 
@@ -111,14 +97,16 @@ class Model(object):
 
     def load(self):
         print('Loading parm...')
+        # Load Model
         for i in range(self.encoder_nums):
             self.encoders[i].load_state_dict(torch.load(os.path.join(self.load_path, 'encoder%0i.pth' % i)))
-        for i in range(self.expert_nums):
-            self.experts[i].load_state_dict(torch.load(os.path.join(self.load_path, 'expert%0i.pth' % i)))
-        self.optimizer.load_state_dict(torch.load(os.path.join(self.load_path, 'optimizer.ptm')))
+        self.rnn.load_state_dict(torch.load(os.path.join(self.load_path, 'rnn.pth')))
+        # Load optimizer
+        self.encoder_optimizer.load_state_dict(torch.load(os.path.join(self.load_path, 'encoder_optimizer.ptm')))
+        self.rnn_optimizer.load_state_dict(torch.load(os.path.join(self.load_path, 'rnn_optimizer.ptm')))
         print('Loading param complete')
 
-    def train(self):
+    def train_base(self):
         print("Training START")
         train_loader = tordata.DataLoader(
             dataset=self.train_source,
@@ -128,33 +116,27 @@ class Model(object):
         )
         for encoder in self.encoders:
             encoder.train()
-        for expert in self.experts:
-            expert.train()
+        self.rnn.train()
 
         train_loss = []
         for e in range(self.epoch):
             loss_list = []
             if e % 50 == 0:
                 self.lr = self.lr / 10
-                for param_group in self.optimizer.param_groups:
+                for param_group in self.encoder_optimizer.param_groups:
                     param_group['lr'] = self.lr
             for x, y in tqdm(train_loader, ncols=100):
-                batch_nums = x.size()[0]
-                weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
-                self.optimizer.zero_grad()
+                batch_nums = x.size(0)
+                self.encoder_optimizer.zero_grad()
+                self.rnn_optimizer.zero_grad()
                 status_outputs = []
                 for i, encoder in enumerate(self.encoders):
-                    status_output = encoder(x[:, self.segmentation[i]:self.segmentation[i + 1]])
+                    status_output = encoder(x[:, :, self.segmentation[i]:self.segmentation[i + 1]])
                     status_outputs.append(status_output)
-                status = torch.cat(tuple(status_outputs), 1)
+                status = torch.cat(tuple(status_outputs), 2)
 
-                # Gating Network
-                expert_first = self.experts[0]
-                weight_blend = expert_first(weight_blend_first, x[:, self.segmentation[-2]:self.segmentation[-1]])
-
-                # Motion Network
-                expert_last = self.experts[-1]
-                output = expert_last(weight_blend, status)
+                # RNN Network
+                output = self.rnn(status)
 
                 # loss
                 if torch.cuda.is_available():
@@ -163,19 +145,18 @@ class Model(object):
                 loss_list.append(loss.item())
 
                 loss.backward()
-                self.optimizer.step()
+                self.encoder_optimizer.step()
+                self.rnn_optimizer.step()
             if e % 10 == 0:
                 # save param for unity
                 for i in range(self.encoder_nums):
                     self.encoders[i].module.save_network(i, self.save_path)
-                for i in range(self.expert_nums):
-                    self.experts[i].module.save_network(i, self.save_path)
                 # save model for load weights
                 for i in range(self.encoder_nums):
                     torch.save(self.encoders[i].state_dict(), os.path.join(self.save_path, 'encoder%0i.pth' % i))
-                for i in range(self.expert_nums):
-                    torch.save(self.experts[i].state_dict(), os.path.join(self.save_path, 'expert%0i.pth' % i))
-                torch.save(self.optimizer.state_dict(), os.path.join(self.save_path, 'optimizer.ptm'))
+                torch.save(self.rnn.state_dict(), os.path.join(self.save_path, 'rnn.pth'))
+                torch.save(self.encoder_optimizer.state_dict(), os.path.join(self.save_path, 'encoder_optimizer.ptm'))
+                torch.save(self.rnn_optimizer.state_dict(), os.path.join(self.save_path, 'rnn_optimizer.ptm'))
 
             avg_loss = np.asarray(loss_list).mean()
             train_loss.append(avg_loss)
@@ -187,7 +168,6 @@ class Model(object):
             logging.info('Epoch {} : '.format(e + 1) +
                          'Training Loss = {:.9f} '.format(avg_loss) +
                          'lr = {} '.format(self.lr))
-        torch.save(train_loss, os.path.join(self.save_path, 'trainloss.bin'))
         print("Training COMPLETE")
 
     def train_gan(self):
@@ -202,8 +182,7 @@ class Model(object):
         )
         for encoder in self.encoders:
             encoder.eval()
-        for expert in self.experts:
-            expert.eval()
+        self.rnn.eval()
 
         train_refiner_loss = []
         train_discriminative_loss = []
@@ -212,22 +191,18 @@ class Model(object):
             discriminative_loss_list = []
             if e % 50 == 0:
                 self.lr = self.lr / 10
-                for param_group in self.optimizer.param_groups:
+                for param_group in self.encoder_optimizer.param_groups:
                     param_group['lr'] = self.lr
             for x, y in tqdm(train_loader, ncols=100):
                 batch_nums = x.size()[0]
 
                 # Generate NSM output
-                weight_blend_first = self.weight_blend_init.unsqueeze(0).expand(batch_nums, 1)
                 status_outputs = []
                 for i, encoder in enumerate(self.encoders):
-                    status_output = encoder(x[:, self.segmentation[i]:self.segmentation[i + 1]])
+                    status_output = encoder(x[:, :, self.segmentation[i]:self.segmentation[i + 1]])
                     status_outputs.append(status_output)
-                status = torch.cat(tuple(status_outputs), 1)
-                expert_first = self.experts[0]
-                weight_blend = expert_first(weight_blend_first, x[:, self.segmentation[-2]:self.segmentation[-1]])
-                expert_last = self.experts[-1]
-                output = expert_last(weight_blend, status)
+                status = torch.cat(tuple(status_outputs), 2)
+                output = self.rnn(status)
 
                 # Train Discriminative Network
                 self.refiner_optimizer.zero_grad()
