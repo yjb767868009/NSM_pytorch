@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from model.utils.activation_layer import activation_layer
+from ..utils.activation_layer import activation_layer
 import os
 
 
@@ -22,11 +22,11 @@ class Expert(nn.Module):
         for i in range(self.layer_nums):
             w = self.init_weight((self.expert_nums, self.expert_dims[i + 1], self.expert_dims[i]))
             if torch.cuda.is_available():
-                w=w.cuda()
+                w = w.cuda()
             self.W.append(nn.Parameter(w))
             b = torch.zeros(self.expert_nums, self.expert_dims[i + 1], 1)
             if torch.cuda.is_available():
-                b=b.cuda()
+                b = b.cuda()
             self.B.append(nn.Parameter(b))
             self.D.append(nn.Dropout(p=expert_dropout))
             self.A.append(activation_layer(self.expert_activations[i]))

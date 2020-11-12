@@ -1,12 +1,12 @@
 import os
 import numpy
 
-root_dir = "E:/AI4Animation-master/AI4Animation/SIGGRAPH_Asia_2019/Export"
+root_dir = "E:/AI4Animation-master/AI4Animation/SIGGRAPH_Asia_2019/data"
 
 input_dir = os.path.join(root_dir, "Input")
 if not os.path.exists(input_dir):
     os.mkdir(input_dir)
-output_dir = os.path.join(root_dir, "Output")
+output_dir = os.path.join(root_dir, "Label")
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 

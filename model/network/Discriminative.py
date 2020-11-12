@@ -2,7 +2,7 @@ import os
 import torch
 import torch.nn as nn
 
-from model.utils.activation_layer import activation_layer
+from ..utils.activation_layer import activation_layer
 
 
 class Discriminative(nn.Module):

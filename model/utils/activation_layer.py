@@ -4,6 +4,7 @@ activation_layer_list = {
     'relu': nn.ReLU(),
     'elu': nn.ELU(),
     'softmax': nn.Softmax(dim=1),
+    'Sigmoid': nn.Sigmoid(),
     'None': None
 }
 
