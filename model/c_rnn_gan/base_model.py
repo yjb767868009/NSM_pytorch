@@ -160,7 +160,7 @@ class BaseModel(object):
         for x, y in tqdm(train_loader, ncols=100):
             batch_nums = x.size(0)
 
-            # Generate NSM output
+            # Generate nsm output
             status_outputs = []
             for i, encoder in enumerate(self.encoders):
                 status_output = encoder(x[:, :, self.segmentation[i]:self.segmentation[i + 1]])

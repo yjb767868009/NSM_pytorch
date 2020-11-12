@@ -141,3 +141,7 @@ class GANModel(object):
                          'lr = {} '.format(self.lr))
 
         print('Training GAN COMPLETE')
+
+    def test(self):
+        # todo test model
+        pass

@@ -7,7 +7,7 @@ conf = {
         'dataset_path': "E:/AI4Animation-master/AI4Animation/SIGGRAPH_Asia_2019/Export",
     },
     "model": {
-        'model_name': 'NSM',
+        'model_name': 'nsm',
         'epoch': 150,
         'batch_size': 64,
         'segmentation': [0, 419, 575, 2609, 4657, 5307],

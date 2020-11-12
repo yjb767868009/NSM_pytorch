@@ -11,7 +11,7 @@ conf = {
         'label_dir': "E:/AI4Animation-master/AI4Animation/SIGGRAPH_Asia_2019/data/Label",
     },
     "base_model": {
-        'model_name': 'NSM',
+        'model_name': 'nsm',
         'epoch': 1,
         'batch_size': 1,
         'lr': 0.001,

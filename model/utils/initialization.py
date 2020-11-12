@@ -1,8 +1,8 @@
 import os
-from .utils import load_data
-from .c_rnn_gan.base_model import BaseModel
-from .c_rnn_gan.gan_model import GANModel
-from .c_rnn_gan.config import conf
+from model.utils import load_data
+from model.c_rnn_gan.base_model import BaseModel
+from model.c_rnn_gan.gan_model import GANModel
+from model.c_rnn_gan.config import conf
 
 
 def initialize_model(name, model_config, data):

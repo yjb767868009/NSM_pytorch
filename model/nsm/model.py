@@ -10,7 +10,7 @@ import torch.utils
 import torch.utils.cpp_extension
 import torch.utils.data as tordata
 
-from .network import Expert, Encoder
+from model.network import Expert, Encoder
 
 # Check GPU available
 print('CUDA_HOME:', torch.utils.cpp_extension.CUDA_HOME)
