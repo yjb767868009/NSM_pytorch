@@ -9,7 +9,7 @@ import torch.optim as optim
 import torch.utils
 import torch.utils.cpp_extension
 import torch.utils.data as tordata
-
+import torch.nn.utils.rnn as rnn_utils
 from ..network import *
 from ..utils import build_network
 
@@ -61,6 +61,17 @@ class BaseModel(object):
                             format='%(asctime)s  %(message)s',
                             filename=os.path.join(self.save_path, 'log.txt'))
 
+    def collate_fn(self, data):
+        batch_size = len(data)
+        input_data = [data[i][0] for i in range(batch_size)]
+        output_data = [data[i][1] for i in range(batch_size)]
+        input_data.sort(key=lambda x: len(x), reverse=True)
+        output_data.sort(key=lambda x: len(x), reverse=True)
+        data_length = [len(sq) for sq in input_data]
+        input_data = rnn_utils.pad_sequence(input_data, batch_first=True, padding_value=0)
+        output_data = rnn_utils.pad_sequence(output_data, batch_first=True, padding_value=0)
+        return [input_data, output_data], data_length
+
     def train(self):
         print("Training START")
         train_loader = tordata.DataLoader(
@@ -68,6 +79,7 @@ class BaseModel(object):
             batch_size=self.batch_size,
             num_workers=4,
             shuffle=True,
+            collate_fn=self.collate_fn,
         )
         for encoder in self.encoders:
             encoder.train()
@@ -80,7 +92,9 @@ class BaseModel(object):
                 self.lr = self.lr / 10
                 for param_group in self.encoder_optimizer.param_groups:
                     param_group['lr'] = self.lr
-            for x, y in tqdm(train_loader, ncols=100):
+            for data, data_length in tqdm(train_loader, ncols=100):
+                x = data[0]
+                y = data[1]
                 batch_nums = x.size(0)
                 self.encoder_optimizer.zero_grad()
                 self.rnn_optimizer.zero_grad()
@@ -91,7 +105,7 @@ class BaseModel(object):
                 status = torch.cat(tuple(status_outputs), 2)
 
                 # RNN Network
-                output = self.rnn(status)
+                output = self.rnn(status, data_length)
 
                 # loss
                 if torch.cuda.is_available():

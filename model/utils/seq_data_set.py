@@ -1,3 +1,4 @@
+import torch
 import torch.utils.data as tordata
 import numpy as np
 import os
@@ -30,7 +31,7 @@ class DataSet(tordata.Dataset):
         return self.data_size
 
     def __loader__(self, path):
-        return np.float32(np.loadtxt(path))
+        return torch.FloatTensor(np.float32(np.loadtxt(path)))
 
     def __getitem__(self, item):
         if not self.cache:
