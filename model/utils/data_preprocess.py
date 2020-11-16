@@ -20,6 +20,11 @@ def data_preprocess(root_dir):
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
 
+    def save_data(i, write_input, write_output):
+        print("Preprocess Data " + str(i) + " ......")
+        numpy.savetxt(os.path.join(input_dir, str(i) + '.txt'), write_input, fmt="%.8f")
+        numpy.savetxt(os.path.join(output_dir, str(i) + '.txt'), write_output, fmt="%.8f")
+
     sequences_file = open(os.path.join(root_dir, "Sequences.txt"), 'r')
     input_file = open(os.path.join(root_dir, "Input.txt"), 'r')
     output_file = open(os.path.join(root_dir, "Output.txt"), 'r')
@@ -36,9 +41,7 @@ def data_preprocess(root_dir):
             break
         sequences_index = int(sequences_data) - 1
         if index != sequences_index:
-            print("Preprocess Data " + str(index) + " ......")
-            numpy.savetxt(os.path.join(input_dir, str(index) + '.txt'), write_input_list)
-            numpy.savetxt(os.path.join(output_dir, str(index) + '.txt'), write_output_list)
+            save_data(index, write_input_list, write_output_list)
             write_input_list = numpy.empty(shape=[0, 5307])
             write_output_list = numpy.empty(shape=[0, 618])
             index = sequences_index
@@ -52,7 +55,9 @@ def data_preprocess(root_dir):
         output_data = (output_data - output_mean) / output_std
         write_input_list = numpy.append(write_input_list, input_data, axis=0)
         write_output_list = numpy.append(write_output_list, output_data, axis=0)
-    print("Preprocess Data " + str(index) + " ......")
-    numpy.savetxt(os.path.join(input_dir, str(index) + '.txt'), write_input_list)
-    numpy.savetxt(os.path.join(output_dir, str(index) + '.txt'), write_output_list)
+    save_data(index, write_input_list, write_output_list)
     print("Preprocess Data Complete")
+
+
+if __name__ == '__main__':
+    data_preprocess("E:/AI4Animation-master/AI4Animation/SIGGRAPH_Asia_2019/Export")

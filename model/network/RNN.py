@@ -32,5 +32,18 @@ class RNN(nn.Module):
         x = self.fc3(x)
         return x
 
-    def save_network(self):
-        pass
+    def save_network(self, save_path):
+        for i in range(3):
+            self.state_dict()['fc%0i.1.weight' % (i + 1)].cpu().detach().numpy().tofile(
+                os.path.join(save_path, 'rnn_w%0i.bin' % i))
+            self.state_dict()['fc%0i.1.bias' % (i + 1)].cpu().detach().numpy().tofile(
+                os.path.join(save_path, 'rnn_b%0i.bin' % i))
+        for i in range(2):
+            self.state_dict()['lstm%0i.weight_ih_l0' % (i + 1)].cpu().detach().numpy().tofile(
+                os.path.join(save_path, 'rnn_lstm_wih%0i.bin' % i))
+            self.state_dict()['lstm%0i.weight_hh_l0' % (i + 1)].cpu().detach().numpy().tofile(
+                os.path.join(save_path, 'rnn_lstm_whh%0i.bin' % i))
+            self.state_dict()['lstm%0i.bias_ih_l0' % (i + 1)].cpu().detach().numpy().tofile(
+                os.path.join(save_path, 'rnn_lstm_bih%0i.bin' % i))
+            self.state_dict()['lstm%0i.bias_ih_l0' % (i + 1)].cpu().detach().numpy().tofile(
+                os.path.join(save_path, 'rnn_lstm_bhh%0i.bin' % i))
