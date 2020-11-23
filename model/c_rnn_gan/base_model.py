@@ -55,11 +55,19 @@ class BaseModel(object):
                                              lr=self.lr)
         self.rnn_optimizer = optim.Adam(self.rnn.parameters())
         # build loss function
-        self.loss_function = nn.MSELoss(reduction='mean')
+        self.loss_function = self.mask_loss
 
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s  %(message)s',
                             filename=os.path.join(self.save_path, 'log.txt'))
+
+    def mask_loss(self, x, y, data_length):
+        mask = torch.zeros_like(x).float()
+        for i in range(len(mask)):
+            mask[i][:data_length[i]] = 1
+        x = x * mask
+        loss = torch.mean(torch.pow((x - y), 2))
+        return loss
 
     def collate_fn(self, data):
         batch_size = len(data)
@@ -118,9 +126,7 @@ class BaseModel(object):
                 self.lr = self.lr / 10
                 for param_group in self.encoder_optimizer.param_groups:
                     param_group['lr'] = self.lr
-            for data, data_length in tqdm(train_loader, ncols=100):
-                x = data[0]
-                y = data[1]
+            for (x, y), data_length in tqdm(train_loader, ncols=100):
                 batch_nums = x.size(0)
                 self.encoder_optimizer.zero_grad()
                 self.rnn_optimizer.zero_grad()
@@ -130,7 +136,7 @@ class BaseModel(object):
                 # loss
                 if torch.cuda.is_available():
                     y = y.cuda()
-                loss = self.loss_function(output, y)
+                loss = self.loss_function(output, y, data_length)
                 loss_list.append(loss.item())
 
                 loss.backward()
@@ -176,9 +182,7 @@ class BaseModel(object):
         )
 
         test_loss = []
-        for data, data_length in tqdm(train_loader, ncols=100):
-            x = data[0]
-            y = data[1]
+        for (x, y), data_length in tqdm(train_loader, ncols=100):
             batch_nums = x.size(0)
 
             # Generate nsm output
@@ -187,13 +191,13 @@ class BaseModel(object):
             if save_path:
                 for i in range(batch_nums):
                     np.savetxt(os.path.join(save_path, str(save_index) + ".txt"),
-                               output[0, :, :].cpu().detach().numpy())
+                               output[0, :, :].cpu().detach().numpy(), fmt="%.8f")
                     save_index += 1
 
             # loss
             if torch.cuda.is_available():
                 y = y.cuda()
-            loss = self.loss_function(output, y)
+            loss = self.loss_function(output, y, data_length)
             test_loss.append(loss.item())
 
         avg_loss = np.asarray(test_loss).mean()
