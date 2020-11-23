@@ -22,8 +22,6 @@ parser.add_argument('--test', default=False, help='test model')
 opt = parser.parse_args()
 
 if __name__ == '__main__':
-    if opt.data_preprocess:
-        data_preprocess("E:/AI4Animation-master/AI4Animation/SIGGRAPH_Asia_2019/data")
     if opt.train_Base:
         base_model = initialization("base_model", cache=True)
         base_model.train()

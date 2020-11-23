@@ -56,3 +56,7 @@ def data_preprocess(root_dir):
     numpy.savetxt(os.path.join(input_dir, str(index) + '.txt'), write_input_list)
     numpy.savetxt(os.path.join(output_dir, str(index) + '.txt'), write_output_list)
     print("Preprocess Data Complete")
+
+
+if __name__ == '__main__':
+    data_preprocess("E:/NSM/data1")

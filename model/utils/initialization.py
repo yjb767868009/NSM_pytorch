@@ -18,9 +18,14 @@ def initialize_model(name, model_config, data):
 def initialization(name, cache=True):
     print("Initializing...")
     os.environ["CUDA_VISIBLE_DEVICES"] = conf["CUDA_VISIBLE_DEVICES"]
+    data_root = conf['data_root']
     model = None
     if name == "base_model":
-        model = initialize_model("BaseModel", conf['base_model'], load_data(**conf['base_data'], cache=cache))
+        model = initialize_model("BaseModel", conf['base_model'],
+                                 load_data(os.path.join(data_root, 'Input'), os.path.join(data_root, 'Label'),
+                                           cache=cache))
     if name == "gan_model":
-        model = initialize_model("GANModel", conf['gan_model'], load_data(**conf['gan_data'], cache=cache))
+        model = initialize_model("GANModel", conf['gan_model'],
+                                 load_data(os.path.join(data_root, 'Output'), os.path.join(data_root, 'Label'),
+                                           cache=cache))
     return model

@@ -54,6 +54,9 @@ class GANModel(object):
                             format='%(asctime)s  %(message)s',
                             filename=os.path.join(self.save_path, 'log.txt'))
 
+    def forward(self, x):
+        return self.refiner(x)
+
     def train(self):
         print("Training GAN")
 
@@ -114,9 +117,6 @@ class GANModel(object):
                 self.refiner_optimizer.step()
 
             if e % 10 == 0:
-                # save param for unity
-                self.refiner.module.save_network(self.save_path)
-
                 # save model for load weights
                 torch.save(self.refiner.state_dict(), os.path.join(self.save_path, 'refiner.pth'))
                 torch.save(self.discriminative.state_dict(), os.path.join(self.save_path, 'discriminative.pth'))

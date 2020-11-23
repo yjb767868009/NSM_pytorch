@@ -72,6 +72,32 @@ class BaseModel(object):
         output_data = rnn_utils.pad_sequence(output_data, batch_first=True, padding_value=0)
         return [input_data, output_data], data_length
 
+    def load_param(self):
+        print('Loading parm...')
+        # Load Model
+        for i in range(self.encoder_nums):
+            self.encoders[i].load_state_dict(torch.load(os.path.join(self.load_path, 'encoder%0i.pth' % i)))
+        self.rnn.load_state_dict(torch.load(os.path.join(self.load_path, 'rnn.pth')))
+        # Load optimizer
+        self.encoder_optimizer.load_state_dict(torch.load(os.path.join(self.load_path, 'encoder_optimizer.ptm')))
+        self.rnn_optimizer.load_state_dict(torch.load(os.path.join(self.load_path, 'rnn_optimizer.ptm')))
+        print('Loading param complete')
+        for encoder in self.encoders:
+            encoder.eval()
+        self.rnn.eval()
+
+    def forward(self, x, x_length=None):
+        # Encoder Network
+        status_outputs = []
+        for i, encoder in enumerate(self.encoders):
+            status_output = encoder(x[:, :, self.segmentation[i]:self.segmentation[i + 1]])
+            status_outputs.append(status_output)
+        status = torch.cat(tuple(status_outputs), 2)
+
+        # RNN Network
+        output = self.rnn(status, x_length)
+        return output
+
     def train(self):
         print("Training START")
         train_loader = tordata.DataLoader(
@@ -98,14 +124,8 @@ class BaseModel(object):
                 batch_nums = x.size(0)
                 self.encoder_optimizer.zero_grad()
                 self.rnn_optimizer.zero_grad()
-                status_outputs = []
-                for i, encoder in enumerate(self.encoders):
-                    status_output = encoder(x[:, :, self.segmentation[i]:self.segmentation[i + 1]])
-                    status_outputs.append(status_output)
-                status = torch.cat(tuple(status_outputs), 2)
 
-                # RNN Network
-                output = self.rnn(status, data_length)
+                output = self.forward(x, data_length)
 
                 # loss
                 if torch.cuda.is_available():
@@ -117,10 +137,6 @@ class BaseModel(object):
                 self.encoder_optimizer.step()
                 self.rnn_optimizer.step()
             if e % 10 == 0:
-                # save param for unity
-                for i in range(self.encoder_nums):
-                    self.encoders[i].module.save_network(i, self.save_path)
-                # save model for load weights
                 for i in range(self.encoder_nums):
                     torch.save(self.encoders[i].state_dict(), os.path.join(self.save_path, 'encoder%0i.pth' % i))
                 torch.save(self.rnn.state_dict(), os.path.join(self.save_path, 'rnn.pth'))
@@ -150,37 +166,23 @@ class BaseModel(object):
             if not os.path.exists(save_path):
                 os.mkdir(save_path)
 
-        print('Loading parm...')
-        # Load Model
-        for i in range(self.encoder_nums):
-            self.encoders[i].load_state_dict(torch.load(os.path.join(self.load_path, 'encoder%0i.pth' % i)))
-        self.rnn.load_state_dict(torch.load(os.path.join(self.load_path, 'rnn.pth')))
-        # Load optimizer
-        self.encoder_optimizer.load_state_dict(torch.load(os.path.join(self.load_path, 'encoder_optimizer.ptm')))
-        self.rnn_optimizer.load_state_dict(torch.load(os.path.join(self.load_path, 'rnn_optimizer.ptm')))
-        print('Loading param complete')
-
-        for encoder in self.encoders:
-            encoder.eval()
-        self.rnn.eval()
+        self.load_param()
 
         train_loader = tordata.DataLoader(
             dataset=self.test_source,
             batch_size=self.batch_size,
             num_workers=4,
+            collate_fn=self.collate_fn,
         )
 
         test_loss = []
-        for x, y in tqdm(train_loader, ncols=100):
+        for data, data_length in tqdm(train_loader, ncols=100):
+            x = data[0]
+            y = data[1]
             batch_nums = x.size(0)
 
             # Generate nsm output
-            status_outputs = []
-            for i, encoder in enumerate(self.encoders):
-                status_output = encoder(x[:, :, self.segmentation[i]:self.segmentation[i + 1]])
-                status_outputs.append(status_output)
-            status = torch.cat(tuple(status_outputs), 2)
-            output = self.rnn(status)
+            output = self.forward(x, data_length)
 
             if save_path:
                 for i in range(batch_nums):
