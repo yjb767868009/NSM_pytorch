@@ -21,6 +21,6 @@ def collate_fn(data):
     input_data.sort(key=lambda x: len(x), reverse=True)
     output_data.sort(key=lambda x: len(x), reverse=True)
     data_length = [len(sq) for sq in input_data]
-    input_data = rnn_utils.pad_sequence(input_data, batch_first=True, padding_value=0)
-    output_data = rnn_utils.pad_sequence(output_data, batch_first=True, padding_value=0)
+    input_data = rnn_utils.pad_sequence(input_data, batch_first=True, padding_value=-1)
+    output_data = rnn_utils.pad_sequence(output_data, batch_first=True, padding_value=-1)
     return [input_data, output_data], data_length
