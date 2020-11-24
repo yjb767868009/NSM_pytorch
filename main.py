@@ -24,12 +24,12 @@ opt = parser.parse_args()
 if __name__ == '__main__':
     if opt.data_preprocess != "":
         data_preprocess(opt.data_preprocess)
-    if opt.train_Base:
+    if opt.train_Base is True:
         base_model = initialization("base_model", cache=opt.cache)
         base_model.train()
         if opt.test:
             base_model.test()
-    if opt.train_GAN:
+    if opt.train_GAN is True:
         gan_model = initialization("gan_model", cache=opt.cache)
         gan_model.train()
         if opt.test:

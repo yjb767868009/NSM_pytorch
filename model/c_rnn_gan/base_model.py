@@ -107,7 +107,8 @@ class BaseModel(object):
         return output
 
     def train(self):
-        print("Training START")
+        print("Training Base")
+
         train_loader = tordata.DataLoader(
             dataset=self.train_source,
             batch_size=self.batch_size,

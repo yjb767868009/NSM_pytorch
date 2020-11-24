@@ -1,3 +1,5 @@
+import torch
+
 from model.c_rnn_gan import conf
 from model.utils.initialization import initialize_model
 
@@ -10,7 +12,15 @@ class Server(object):
         self.gan_model.load_param()
 
     def forward(self, x):
-        x_length = len(x)
-        x = self.base_model.forward(x, x_length)
-        x = self.gan_model.forward(x)
-        return x
+        lines = x.split('\n')
+        data = []
+        for line in lines:
+            if line == "":
+                break
+            data_line = [float(a) for a in line.split(' ')]
+            data.append(data_line)
+        data = torch.Tensor(data)
+        data_length = len(data)
+        data = self.base_model.forward(data, data_length)
+        data = self.gan_model.forward(data)
+        return data

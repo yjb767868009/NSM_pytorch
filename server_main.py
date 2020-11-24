@@ -28,7 +28,10 @@ def af_request(resp):
 def upload():
     print("Get data")
     x = request.form['data']
-    output = server.forward(x)
+    try:
+        output = server.forward(x)
+    except Exception as e:
+        print(e)
     return jsonify({'message': 'success',
                     'output': output})
 
