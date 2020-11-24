@@ -3,14 +3,14 @@ conf = {
     "data_root": "/home/DISK/yujubo/data",
     "base_model": {
         'model_name': 'nsm',
-        'epoch': 100,
+        'epoch': 150,
         'batch_size': 16,
         'lr': 0.001,
         'segmentation': [0, 419, 575, 2609, 4657, 5307],
 
         "save_path": "/home/DISK/yujubo/trained",
         "load_path": "/home/DISK/yujubo/trained",
-        "save_output": "/home/DISK/yujubo/data/Output",
+        "save_output": "/home/DISK/yujubo/data",
 
         'encoder_nums': 5,
         'encoder_dims': [[419, 512, 512],
