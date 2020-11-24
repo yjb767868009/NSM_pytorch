@@ -1,5 +1,3 @@
-import datetime
-import os
 from flask import *
 from flask_cors import CORS
 
@@ -26,7 +24,8 @@ def af_request(resp):
 
 @app.route('/', methods=['POST'])
 def upload():
-    output = server.eval()
+    x = request.form['data']
+    output = server.forward()
     return jsonify({'message': 'success',
                     'output': output})
 

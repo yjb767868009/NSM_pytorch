@@ -1,15 +1,14 @@
+import datetime
 import logging
 import os
+
 import numpy as np
-import datetime
-from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
 import torch.utils.data as tordata
+from tqdm import tqdm
 
-from ..network import *
 from ..utils import build_network
 
 
@@ -53,6 +52,14 @@ class GANModel(object):
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s  %(message)s',
                             filename=os.path.join(self.save_path, 'log.txt'))
+
+    def load_param(self):
+        print('Loading parm...')
+        # Load Model
+        self.refiner.load_state_dict(torch.load(os.path.join(self.save_path, 'refiner.pth')))
+        self.refiner_optimizer.load_state_dict(torch.load(os.path.join(self.save_path, 'refiner_optimizer.ptm')))
+        self.refiner.eval()
+        print('Loading param complete')
 
     def forward(self, x):
         return self.refiner(x)
