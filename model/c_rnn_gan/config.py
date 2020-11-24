@@ -10,7 +10,7 @@ conf = {
 
         "save_path": "E:/NSM/trained",
         "load_path": "E:/NSM/trained",
-        "save_output": "E:/NSM/data2/Output",
+        "save_output": "E:/NSM/data2",
 
         'encoder_nums': 5,
         'encoder_dims': [[419, 512, 512],
