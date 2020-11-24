@@ -154,22 +154,29 @@ class BaseModel(object):
 
         if self.save_output:
             print("Saving output")
-            self.test(self.save_output)
+            self.save_output_function()
             print("Saving COMPLETE")
 
-    def test(self, save_path=None):
-        if save_path:
-            save_index = 0
-            if not os.path.exists(save_path):
-                os.mkdir(save_path)
+    def save_output_function(self):
+        save_dir = os.path.join(self.save_output, 'Output')
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        input_dir = os.path.join(self.save_output, 'Input')
+        for f_path in os.listdir(input_dir):
+            x = torch.Tensor(np.float32(np.loadtxt(os.path.join(input_dir, f_path))))
+            x = x.unsqueeze(0)
+            output = self.forward(x, [x.size(1)])
+            np.savetxt(os.path.join(save_dir, f_path), output[0, :, :].cpu().detach().numpy(),
+                       fmt="%.8f")
 
+    def test(self):
         self.load_param()
 
         train_loader = tordata.DataLoader(
             dataset=self.test_source,
             batch_size=self.batch_size,
             num_workers=4,
-            collate_fn=self.collate_fn,
+            collate_fn=collate_fn,
         )
 
         test_loss = []
@@ -178,12 +185,6 @@ class BaseModel(object):
 
             # Generate nsm output
             output = self.forward(x, data_length)
-
-            if save_path:
-                for i in range(batch_nums):
-                    np.savetxt(os.path.join(save_path, str(save_index) + ".txt"),
-                               output[0, :, :].cpu().detach().numpy(), fmt="%.8f")
-                    save_index += 1
 
             # loss
             if torch.cuda.is_available():
