@@ -60,4 +60,4 @@ def data_preprocess(root_dir):
 
 
 if __name__ == '__main__':
-    data_preprocess("E:/NSM/data1")
+    data_preprocess("E:/NSM/data2")

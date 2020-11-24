@@ -1,6 +1,6 @@
 conf = {
     "CUDA_VISIBLE_DEVICES": "0",
-    "data_root": "E:/NSM/data1",
+    "data_root": "E:/NSM/data2",
     "base_model": {
         'model_name': 'nsm',
         'epoch': 10,
@@ -32,7 +32,7 @@ conf = {
     "gan_model": {
         'model_name': 'GAN',
         'epoch': 10,
-        'batch_size': 1,
+        'batch_size': 2,
         'lr': 0.001,
 
         "save_path": "E:/NSM/trained",
