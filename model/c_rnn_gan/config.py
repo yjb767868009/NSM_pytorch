@@ -1,16 +1,16 @@
 conf = {
     "CUDA_VISIBLE_DEVICES": "0",
-    "data_root": "/home/DISK/yujubo/data",
+    "data_root": "E:/NSM/data2",
     "base_model": {
         'model_name': 'nsm',
         'epoch': 10,
-        'batch_size': 2,
+        'batch_size': 4,
         'lr': 0.001,
         'segmentation': [0, 419, 575, 2609, 4657, 5307],
 
-        "save_path": "/home/DISK/yujubo/trained",
-        "load_path": "/home/DISK/yujubo/trained",
-        "save_output": "/home/DISK/yujubo/data/Output",
+        "save_path": "E:/NSM/trained",
+        "load_path": "E:/NSM/trained",
+        "save_output": "E:/NSM/data1/Output",
 
         'encoder_nums': 5,
         'encoder_dims': [[419, 512, 512],
@@ -32,11 +32,11 @@ conf = {
     "gan_model": {
         'model_name': 'GAN',
         'epoch': 10,
-        'batch_size': 1,
+        'batch_size': 4,
         'lr': 0.001,
 
-        "save_path": "/home/DISK/yujubo/trained",
-        "load_path": "/home/DISK/yujubo/trained",
+        "save_path": "E:/NSM/trained",
+        "load_path": "E:/NSM/trained",
 
         'refiner_dims': [618, 512, 512, 618],
         'refiner_activations': ['elu', 'elu'],
