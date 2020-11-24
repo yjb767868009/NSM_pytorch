@@ -1,7 +1,7 @@
 import os
 import torch
 import torch.nn as nn
-
+import torch.nn.utils.rnn as rnn_utils
 from ..utils.activation_layer import activation_layer
 
 
@@ -18,9 +18,11 @@ class Discriminative(nn.Module):
         self.fc3 = nn.Sequential(nn.Linear(discriminative_dims[3], discriminative_dims[4]),
                                  activation_layer(discriminative_activations[2]))
 
-    def forward(self, x):
+    def forward(self, x, x_length):
         x = self.fc1(x)
+        x = rnn_utils.pack_padded_sequence(x, x_length, batch_first=True)
         x, _ = self.lstm(x)
+        x, x_length = rnn_utils.pad_packed_sequence(x, batch_first=True)
         x = self.fc2(x)
         x = self.fc3(x)
         return x[:, -1, 0]

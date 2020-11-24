@@ -12,6 +12,7 @@ import torch.utils.data as tordata
 import torch.nn.utils.rnn as rnn_utils
 from ..network import *
 from ..utils import build_network
+from ..utils.seq_data_loader import collate_fn
 
 
 class BaseModel(object):
@@ -69,17 +70,6 @@ class BaseModel(object):
         loss = torch.mean(torch.pow((x - y), 2))
         return loss
 
-    def collate_fn(self, data):
-        batch_size = len(data)
-        input_data = [data[i][0] for i in range(batch_size)]
-        output_data = [data[i][1] for i in range(batch_size)]
-        input_data.sort(key=lambda x: len(x), reverse=True)
-        output_data.sort(key=lambda x: len(x), reverse=True)
-        data_length = [len(sq) for sq in input_data]
-        input_data = rnn_utils.pad_sequence(input_data, batch_first=True, padding_value=0)
-        output_data = rnn_utils.pad_sequence(output_data, batch_first=True, padding_value=0)
-        return [input_data, output_data], data_length
-
     def load_param(self):
         print('Loading parm...')
         # Load Model
@@ -114,7 +104,7 @@ class BaseModel(object):
             batch_size=self.batch_size,
             num_workers=4,
             shuffle=True,
-            collate_fn=self.collate_fn,
+            collate_fn=collate_fn,
         )
         for encoder in self.encoders:
             encoder.train()

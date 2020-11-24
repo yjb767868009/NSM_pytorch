@@ -10,6 +10,7 @@ import torch.utils.data as tordata
 from tqdm import tqdm
 
 from ..utils import build_network
+from ..utils.seq_data_loader import collate_fn
 
 
 class GANModel(object):
@@ -53,6 +54,15 @@ class GANModel(object):
                             format='%(asctime)s  %(message)s',
                             filename=os.path.join(self.save_path, 'log.txt'))
 
+    def mask_BCEloss(self, x, y, data_length):
+        mask = torch.zeros_like(x).float()
+        for i in range(len(mask)):
+            mask[i][:data_length[i]] = 1
+        x = x * mask
+        loss_function = nn.BCELoss()
+        loss = loss_function(x, y)
+        return loss
+
     def load_param(self):
         print('Loading parm...')
         # Load Model
@@ -72,6 +82,7 @@ class GANModel(object):
             batch_size=self.batch_size,
             num_workers=4,
             shuffle=True,
+            collate_fn=collate_fn,
         )
 
         train_refiner_loss = []
@@ -85,7 +96,7 @@ class GANModel(object):
                     param_group['lr'] = self.lr
                 for param_group in self.discriminative_optimizer.param_groups:
                     param_group['lr'] = self.lr
-            for x, y in tqdm(train_loader, ncols=100):
+            for (x, y), data_length in tqdm(train_loader, ncols=100):
                 batch_nums = x.size(0)
 
                 # Train Discriminative Network
@@ -97,13 +108,13 @@ class GANModel(object):
                     fake_label = fake_label.cuda()
 
                 # Real data's loss
-                real_out = self.discriminative(y)
+                real_out = self.discriminative(y, data_length)
                 discriminative_real_loss = self.discriminative_loss_function(real_out, real_label)
                 discriminative_loss_list.append(discriminative_real_loss.item())
 
                 # Fake data's loss
-                fake_data = self.refiner(x)
-                fake_out = self.discriminative(fake_data)
+                fake_data = self.refiner(x, data_length)
+                fake_out = self.discriminative(fake_data, data_length)
                 discriminative_fake_loss = self.discriminative_loss_function(fake_out, fake_label)
 
                 # discriminative loss backward and renew optimizer
@@ -113,8 +124,8 @@ class GANModel(object):
                 self.discriminative_optimizer.step()
 
                 # Train Refiner Network
-                fake_data = self.refiner(x)
-                fake_out = self.discriminative(fake_data)
+                fake_data = self.refiner(x, data_length)
+                fake_out = self.discriminative(fake_data, data_length)
                 refiner_loss = self.refiner_loss_function(fake_out, real_label)
                 refiner_loss_list.append(refiner_loss.item())
 
