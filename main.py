@@ -13,12 +13,12 @@ if torch.cuda.is_available():
     print('cuda is available:', torch.cuda.is_available())
 
 parser = argparse.ArgumentParser(description='Train')
-parser.add_argument('--cache', default=True, help='cache: if set as TRUE all the training data will be loaded at once'
-                                                  ' before the training start. Default: TRUE')
+parser.add_argument('--cache', help='cache: if set as TRUE all the training data will be loaded at once'
+                                    ' before the training start.', action="store_true")
 parser.add_argument('--data_preprocess', default="", help='preprocess dataset input and output')
-parser.add_argument('--train_Base', default=True, help='train nsm generate model')
-parser.add_argument('--train_GAN', default=True, help='train Refiner GAN')
-parser.add_argument('--test', default=False, help='test model')
+parser.add_argument('--train_Base', help='train nsm generate model', action="store_true")
+parser.add_argument('--train_GAN', help='train Refiner GAN', action="store_true")
+parser.add_argument('--test', help='test model', action="store_true")
 opt = parser.parse_args()
 
 if __name__ == '__main__':

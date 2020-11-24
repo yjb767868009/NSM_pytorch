@@ -10,7 +10,7 @@ conf = {
 
         "save_path": "E:/NSM/trained",
         "load_path": "E:/NSM/trained",
-        "save_output": "E:/NSM/data1/Output",
+        "save_output": "E:/NSM/data2/Output",
 
         'encoder_nums': 5,
         'encoder_dims': [[419, 512, 512],
@@ -32,7 +32,7 @@ conf = {
     "gan_model": {
         'model_name': 'GAN',
         'epoch': 10,
-        'batch_size': 4,
+        'batch_size': 8,
         'lr': 0.001,
 
         "save_path": "E:/NSM/trained",

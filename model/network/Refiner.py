@@ -1,7 +1,7 @@
 import os
 import torch
 import torch.nn as nn
-
+import torch.nn.utils.rnn as rnn_utils
 from ..utils.activation_layer import activation_layer
 
 
@@ -20,9 +20,11 @@ class Refiner(nn.Module):
                                  nn.Linear(refiner_dims[2], refiner_dims[3]),
                                  activation_layer(refiner_activations[1]))
 
-    def forward(self, x):
+    def forward(self, x, x_length):
         x = self.fc1(x)
+        x = rnn_utils.pack_padded_sequence(x, x_length, batch_first=True)
         x, _ = self.lstm(x)
+        x, x_length = rnn_utils.pad_packed_sequence(x, batch_first=True)
         x = self.fc2(x)
         return x
 
