@@ -2,7 +2,7 @@ import torch
 import torch.utils.data as tordata
 import numpy as np
 import os
-
+from tqdm import tqdm
 
 class DataSet(tordata.Dataset):
 
@@ -24,7 +24,7 @@ class DataSet(tordata.Dataset):
         return self.__getitem__(index)
 
     def load_all_data(self):
-        for i in range(self.data_size):
+        for i in tqdm(range(self.data_size)):
             self.load_data(i)
 
     def __len__(self):
