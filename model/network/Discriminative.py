@@ -22,7 +22,7 @@ class Discriminative(nn.Module):
         x = self.fc1(x)
         x = rnn_utils.pack_padded_sequence(x, x_length, batch_first=True)
         x, _ = self.lstm(x)
-        x, x_length = rnn_utils.pad_packed_sequence(x, batch_first=True)
+        x, x_length = rnn_utils.pad_packed_sequence(x, batch_first=True, padding_value=-1)
         x = self.fc2(x)
         x = self.fc3(x)
         return x[:, -1, 0]
