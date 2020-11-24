@@ -1,10 +1,11 @@
-from model.utils.initialization import initialization
+from model.c_rnn_gan import conf
+from model.utils.initialization import initialize_model
 
 
 class Server(object):
     def __init__(self):
-        self.base_model = initialization("base_model")
-        self.gan_model = initialization("gan_model")
+        self.base_model = initialize_model("BaseModel", conf['base_model'], (None, None))
+        self.gan_model = initialize_model("GANModel", conf['gan_model'], (None, None))
         self.base_model.load_param()
         self.gan_model.load_param()
 

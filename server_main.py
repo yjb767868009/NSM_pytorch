@@ -5,7 +5,9 @@ from model.Server.network_server import Server
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
+print("Building Server")
 server = Server()
+print("Building Finish")
 
 
 @app.after_request
@@ -24,8 +26,9 @@ def af_request(resp):
 
 @app.route('/', methods=['POST'])
 def upload():
+    print("Get data")
     x = request.form['data']
-    output = server.forward()
+    output = server.forward(x)
     return jsonify({'message': 'success',
                     'output': output})
 
