@@ -4,6 +4,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 
+
 class DataSet(tordata.Dataset):
 
     def __init__(self, input_dir, label_dir, cache, ):
