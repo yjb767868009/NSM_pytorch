@@ -48,7 +48,7 @@ class Model(object):
             encoder = Encoder(encoder_dims[i], encoder_activations[i], encoder_dropout)
             if torch.cuda.is_available():
                 encoder.cuda()
-            encoder = nn.DataParallel(encoder)
+            encoder = nn.parallel.DistributedDataParallel(encoder)
             self.encoders.append(encoder)
 
         # build expert network
@@ -58,7 +58,7 @@ class Model(object):
             expert = Expert(expert_components[i], expert_dims[i], expert_activations[i], expert_dropout)
             if torch.cuda.is_available():
                 expert.cuda()
-            expert = nn.DataParallel(expert)
+            expert = nn.parallel.DistributedDataParallel(expert)
             self.experts.append(expert)
 
         # weight blend init
