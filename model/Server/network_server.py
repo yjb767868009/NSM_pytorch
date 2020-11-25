@@ -10,17 +10,20 @@ class Server(object):
         self.gan_model = initialize_model("GANModel", conf['gan_model'], (None, None))
         self.base_model.load_param()
         self.gan_model.load_param()
+        self.data = torch.empty(0, 5307)
+        self.full = False
 
     def forward(self, x):
-        lines = x.split('\n')
-        data = []
-        for line in lines:
-            if line == "":
-                break
-            data_line = [float(a) for a in line.split(' ')]
-            data.append(data_line)
-        data = torch.Tensor(data)
-        data_length = len(data)
+        l = [float(a) for a in x.split(' ')]
+        x = torch.Tensor([l])
+        data = torch.cat((self.data, x), 0)
+        if self.full is True:
+            data = data[1:]
+            data_length = 100
+        else:
+            data_length = data.size(0)
+            if data_length == 100:
+                self.full = True
         data = self.base_model.forward(data, data_length)
         data = self.gan_model.forward(data)
         return data
