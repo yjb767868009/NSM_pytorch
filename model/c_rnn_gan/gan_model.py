@@ -44,8 +44,8 @@ class GANModel(object):
                                             discriminative_dropout)
 
         # todo update refiner and discriminative loss
-        self.refiner_loss_function = self.mask_BCEloss
-        self.discriminative_loss_function = self.mask_BCEloss
+        self.refiner_loss_function = nn.BCELoss()
+        self.discriminative_loss_function = nn.BCELoss()
 
         self.refiner_optimizer = optim.RMSprop(self.refiner.parameters())
         self.discriminative_optimizer = optim.RMSprop(self.discriminative.parameters())
@@ -109,13 +109,13 @@ class GANModel(object):
 
                 # Real data's loss
                 real_out = self.discriminative(y, data_length)
-                discriminative_real_loss = self.discriminative_loss_function(real_out, real_label, data_length)
+                discriminative_real_loss = self.discriminative_loss_function(real_out, real_label)
                 discriminative_loss_list.append(discriminative_real_loss.item())
 
                 # Fake data's loss
                 fake_data = self.refiner(x, data_length)
                 fake_out = self.discriminative(fake_data, data_length)
-                discriminative_fake_loss = self.discriminative_loss_function(fake_out, fake_label, data_length)
+                discriminative_fake_loss = self.discriminative_loss_function(fake_out, fake_label)
 
                 # discriminative loss backward and renew optimizer
                 discriminative_loss = discriminative_real_loss + discriminative_fake_loss
@@ -126,7 +126,7 @@ class GANModel(object):
                 # Train Refiner Network
                 fake_data = self.refiner(x, data_length)
                 fake_out = self.discriminative(fake_data, data_length)
-                refiner_loss = self.refiner_loss_function(fake_out, real_label, data_length)
+                refiner_loss = self.refiner_loss_function(fake_out, real_label)
                 refiner_loss_list.append(refiner_loss.item())
 
                 # refiner loss backward and renew optimizer
