@@ -37,7 +37,7 @@ def upload():
 
 @app.route('/test', methods=['POST'])
 def test():
-    pass
+    return
 
 if __name__ == '__main__':
     app.run('0.0.0.0', port=8081)
