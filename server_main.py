@@ -37,7 +37,9 @@ def upload():
 
 @app.route('/test', methods=['POST'])
 def test():
-    return
+    request_body = request.json
+    print(request_body)
+    return request_body
 
 if __name__ == '__main__':
     app.run('0.0.0.0', port=8081)
