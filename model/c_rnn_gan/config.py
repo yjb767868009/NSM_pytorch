@@ -4,7 +4,7 @@ conf = {
     "base_model": {
         'model_name': 'nsm',
         'epoch': 150,
-        'batch_size': 16,
+        'batch_size': 8,
         'lr': 0.001,
         'segmentation': [0, 419, 575, 2609, 4657, 5307],
 
@@ -31,8 +31,8 @@ conf = {
     },
     "gan_model": {
         'model_name': 'GAN',
-        'epoch': 100,
-        'batch_size': 16,
+        'epoch': 150,
+        'batch_size': 8,
         'lr': 0.001,
 
         "save_path": "/home/DISK/yujubo/trained",
