@@ -71,8 +71,8 @@ class GANModel(object):
         self.refiner.eval()
         print('Loading param complete')
 
-    def forward(self, x):
-        return self.refiner(x)
+    def forward(self, x, x_length=None):
+        return self.refiner(x, x_length)
 
     def train(self):
         print("Training GAN")
