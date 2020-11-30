@@ -47,8 +47,8 @@ class GANModel(object):
         self.refiner_loss_function = nn.BCELoss()
         self.discriminative_loss_function = nn.BCELoss()
 
-        self.refiner_optimizer = optim.RMSprop(self.refiner.parameters())
-        self.discriminative_optimizer = optim.RMSprop(self.discriminative.parameters())
+        self.refiner_optimizer = optim.Adam(self.refiner.parameters())
+        self.discriminative_optimizer = optim.Adam(self.discriminative.parameters())
 
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s  %(message)s',
@@ -107,6 +107,17 @@ class GANModel(object):
                     real_label = real_label.cuda()
                     fake_label = fake_label.cuda()
 
+                # Train Refiner Network
+                fake_data = self.refiner(x, data_length)
+                fake_out = self.discriminative(fake_data, data_length)
+                refiner_loss = self.refiner_loss_function(fake_out, real_label)
+                refiner_loss_list.append(refiner_loss.item())
+
+                # refiner loss backward and renew optimizer
+                self.refiner_optimizer.zero_grad()
+                refiner_loss.backward(retain_graph=True)
+                self.refiner_optimizer.step()
+
                 # Real data's loss
                 real_out = self.discriminative(y, data_length)
                 discriminative_real_loss = self.discriminative_loss_function(real_out, real_label)
@@ -122,17 +133,6 @@ class GANModel(object):
                 self.discriminative_optimizer.zero_grad()
                 discriminative_loss.backward(retain_graph=True)
                 self.discriminative_optimizer.step()
-
-                # Train Refiner Network
-                fake_data = self.refiner(x, data_length)
-                fake_out = self.discriminative(fake_data, data_length)
-                refiner_loss = self.refiner_loss_function(fake_out, real_label)
-                refiner_loss_list.append(refiner_loss.item())
-
-                # refiner loss backward and renew optimizer
-                self.refiner_optimizer.zero_grad()
-                refiner_loss.backward()
-                self.refiner_optimizer.step()
 
             if e % 10 == 0:
                 # save model for load weights
