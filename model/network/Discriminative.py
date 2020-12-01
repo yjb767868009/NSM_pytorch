@@ -25,4 +25,10 @@ class Discriminative(nn.Module):
         x, x_length = rnn_utils.pad_packed_sequence(x, batch_first=True, padding_value=0)
         x = self.fc2(x)
         x = self.fc3(x)
-        return x[:, -1, 0]
+        x = x.squeeze(-1)
+        if torch.cuda.is_available():
+            x_length = x_length.cuda()
+        x_length = x_length - 1
+        x_length = x_length.unsqueeze(1)
+        z = torch.gather(x, 1, x_length)
+        return z

@@ -22,7 +22,7 @@ class Server(object):
     def forward(self, x):
         x = np.array(x)
         x = (x - self.input_mean) / self.input_std
-        x = torch.Tensor([x])
+        x = torch.tensor([x])
         self.data = torch.cat((self.data, x), 0)
         if self.full is True:
             self.data = self.data[1:]

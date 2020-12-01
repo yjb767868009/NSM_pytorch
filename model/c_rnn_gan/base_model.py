@@ -60,7 +60,7 @@ class BaseModel(object):
 
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s  %(message)s',
-                            filename=os.path.join(self.save_path, 'log.txt'))
+                            filename=os.path.join(self.save_path, 'rnn_log.txt'))
 
     def mask_loss(self, x, y, data_length):
         mask = torch.zeros_like(x).float()
@@ -163,7 +163,7 @@ class BaseModel(object):
             os.mkdir(save_dir)
         input_dir = os.path.join(self.save_output, 'Input')
         for f_path in os.listdir(input_dir):
-            x = torch.Tensor(np.float32(np.loadtxt(os.path.join(input_dir, f_path))))
+            x = torch.tensor(np.float32(np.loadtxt(os.path.join(input_dir, f_path))))
             x = x.unsqueeze(0)
             output = self.forward(x, [x.size(1)])
             np.savetxt(os.path.join(save_dir, f_path), output[0, :, :].cpu().detach().numpy(),
