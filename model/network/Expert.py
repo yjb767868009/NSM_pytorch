@@ -49,7 +49,7 @@ class Expert(nn.Module):
         w = np.asarray(
             np.random.uniform(low=-a, high=a, size=shape),
             dtype=np.float32)
-        return torch.Tensor(w)
+        return torch.tensor(w)
 
     def get_wb(self, x, weight_blend):
         """

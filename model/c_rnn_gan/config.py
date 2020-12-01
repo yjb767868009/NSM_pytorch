@@ -31,7 +31,7 @@ conf = {
     },
     "gan_model": {
         'model_name': 'GAN',
-        'epoch': 10,
+        'epoch': 100,
         'batch_size': 8,
         'lr': 0.001,
 

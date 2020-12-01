@@ -62,7 +62,7 @@ class Model(object):
             self.experts.append(expert)
 
         # weight blend init
-        self.weight_blend_init = torch.Tensor([1])
+        self.weight_blend_init = torch.tensor([1])
         if torch.cuda.is_available():
             self.weight_blend_init = self.weight_blend_init.cuda()
 
