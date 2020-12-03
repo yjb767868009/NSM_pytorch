@@ -15,7 +15,7 @@ if torch.cuda.is_available():
 parser = argparse.ArgumentParser(description="Train")
 parser.add_argument("--cache", help="cache: if set as TRUE all the training data will be loaded at once"
                                     " before the training start.", action="store_true")
-parser.add_argument("--data_preprocess", help="if need preprocess dataset input and output", action="store_true")
+parser.add_argument("--data_preprocess", default="", help="if need preprocess dataset input and output")
 parser.add_argument("--train_Base", help="train nsm generate model", action="store_true")
 parser.add_argument("--train_GAN", help="train Refiner GAN", action="store_true")
 parser.add_argument("--test", help="test model", action="store_true")

@@ -25,7 +25,7 @@ conf = {
                                 ['elu', 'elu']],
         'encoder_dropout': 0.3,
 
-        'rnn_dims': [2176, 512, 512, 512, 512, 618],
+        'rnn_dims': [2176, 1024, 1024, 1024, 1024, 1024, 1024, 618],
         'rnn_activations': ['elu', 'elu', 'elu'],
         'rnn_dropout': 0.3,
     },

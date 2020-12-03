@@ -16,8 +16,10 @@ class RNN(nn.Module):
                                  activation_layer(rnn_activations[1]), )
         self.lstm1 = nn.LSTM(rnn_dims[2], rnn_dims[3], batch_first=True)
         self.lstm2 = nn.LSTM(rnn_dims[3], rnn_dims[4], batch_first=True)
+        self.lstm3 = nn.LSTM(rnn_dims[4], rnn_dims[5], batch_first=True)
+        self.lstm4 = nn.LSTM(rnn_dims[5], rnn_dims[6], batch_first=True)
         self.fc3 = nn.Sequential(nn.Dropout(rnn_dropout),
-                                 nn.Linear(rnn_dims[4], rnn_dims[5]),
+                                 nn.Linear(rnn_dims[6], rnn_dims[7]),
                                  activation_layer(rnn_activations[2])
                                  )
 
