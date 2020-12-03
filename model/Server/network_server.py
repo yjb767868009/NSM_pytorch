@@ -22,7 +22,7 @@ class Server(object):
     def forward(self, x):
         x = np.array(x)
         x = (x - self.input_mean) / self.input_std
-        x = torch.tensor([x])
+        x = torch.FloatTensor([x])
         self.data = torch.cat((self.data, x), 0)
         if self.full is True:
             self.data = self.data[1:]
@@ -32,7 +32,7 @@ class Server(object):
             if data_length == 100:
                 self.full = True
         data = self.base_model.forward(self.data.unsqueeze(0), [data_length])
-        # data = self.gan_model.forward(data, [data_length])
+        data = self.gan_model.forward(data, [data_length])
         data = data[0][-1].cpu().detach().numpy()
         data = data * self.output_std + self.output_mean
         return data.tolist()

@@ -16,8 +16,10 @@ class RNN(nn.Module):
                                  activation_layer(rnn_activations[1]), )
         self.lstm1 = nn.LSTM(rnn_dims[2], rnn_dims[3], batch_first=True)
         self.lstm2 = nn.LSTM(rnn_dims[3], rnn_dims[4], batch_first=True)
+        self.lstm3 = nn.LSTM(rnn_dims[4], rnn_dims[5], batch_first=True)
+        self.lstm4 = nn.LSTM(rnn_dims[5], rnn_dims[6], batch_first=True)
         self.fc3 = nn.Sequential(nn.Dropout(rnn_dropout),
-                                 nn.Linear(rnn_dims[4], rnn_dims[5]),
+                                 nn.Linear(rnn_dims[6], rnn_dims[7]),
                                  activation_layer(rnn_activations[2])
                                  )
 
@@ -28,6 +30,8 @@ class RNN(nn.Module):
         x = rnn_utils.pack_padded_sequence(x, x_length, batch_first=True)
         x, (h_1, c_1) = self.lstm1(x)
         x, (h_2, c_2) = self.lstm2(x)
+        x, (h_3, c_3) = self.lstm3(x)
+        x, (h_4, c_4) = self.lstm4(x)
         x, x_length = rnn_utils.pad_packed_sequence(x, batch_first=True, padding_value=0)
         x = self.fc3(x)
         return x
