@@ -30,6 +30,8 @@ class RNN(nn.Module):
         x = rnn_utils.pack_padded_sequence(x, x_length, batch_first=True)
         x, (h_1, c_1) = self.lstm1(x)
         x, (h_2, c_2) = self.lstm2(x)
+        x, (h_3, c_3) = self.lstm3(x)
+        x, (h_4, c_4) = self.lstm4(x)
         x, x_length = rnn_utils.pad_packed_sequence(x, batch_first=True, padding_value=0)
         x = self.fc3(x)
         return x
