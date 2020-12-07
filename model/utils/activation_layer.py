@@ -11,3 +11,7 @@ activation_layer_list = {
 
 def activation_layer(s):
     return activation_layer_list.get(s)
+
+def build_layer(layer_name, ):
+    layer = nn.Linear()
+    return layer
