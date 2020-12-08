@@ -54,6 +54,9 @@ class GANModel(object):
                             format='%(asctime)s  %(message)s',
                             filename=os.path.join(self.save_path, 'gan_log.txt'))
 
+        logging.info(self.refiner)
+        logging.info(self.discriminative)
+
     def mask_BCEloss(self, x, y, data_length):
         mask = torch.zeros_like(x).float()
         for i in range(len(mask)):
