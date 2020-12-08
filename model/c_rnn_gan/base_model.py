@@ -61,6 +61,9 @@ class BaseModel(object):
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s  %(message)s',
                             filename=os.path.join(self.save_path, 'rnn_log.txt'))
+        for encoder in self.encoders:
+            logging.info(encoder)
+        logging.info(self.rnn)
 
     def mask_loss(self, x, y, data_length):
         mask = torch.zeros_like(x).float()
