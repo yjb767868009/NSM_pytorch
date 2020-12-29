@@ -1,14 +1,15 @@
 conf = {
-    "save_path": "/home/new_disk/yujubo/NSM/trained/",
-    "load_path": None,
-    "CUDA_VISIBLE_DEVICES": "0,1,2",
+    "save_path": "E:/AI4Animation-master/AI4Animation/SIGGRAPH_Asia_2019/trained",
+    "load_path": "E:/AI4Animation-master/AI4Animation/SIGGRAPH_Asia_2019/trained",
+    "CUDA_VISIBLE_DEVICES": "0",
+    "CUDA_USE": [0],
     "data": {
-        'dataset_path': "/home/new_disk/yujubo/NSM/Export2",
+        'dataset_path': "E:/AI4Animation-master/AI4Animation/SIGGRAPH_Asia_2019/Export",
     },
     "model": {
-        'model_name': 'NSM',
+        'model_name': 'nsm',
         'epoch': 150,
-        'batch_size': 128,
+        'batch_size': 64,
         'segmentation': [0, 419, 575, 2609, 4657, 5307],
         'encoder_nums': 4,
         'encoder_dims': [[419, 512, 512],
@@ -20,12 +21,23 @@ conf = {
                                 ['elu', 'elu'],
                                 ['elu', 'elu']],
         'encoder_dropout': 0.3,
+
         'expert_components': [1, 10],
         'expert_dims': [[650, 512, 512, 10],
                         [1664, 512, 512, 618]],
         'expert_activations': [['elu', 'elu', 'softmax'],
                                ['elu', 'elu', None]],
         'expert_dropout': 0.3,
+
+        'refiner_dims': [618, 512, 512, 618],
+        'refiner_activations': [['elu', 'elu', 'softmax']],
+        'refiner_dropout': 0.3,
+
+        'discriminative_dims': [618, 512, 512, 2, 1],
+        'discriminative_activations': [['elu', 'elu', 'softmax'],
+                                       ['elu', 'elu', None]],
+        'discriminative_dropout': 0.3,
+
         'lr': 0.001,
     },
 }
